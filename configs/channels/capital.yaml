@@ -1,0 +1,14 @@
+version: 1
+nats:
+  url: nats://127.0.0.1:4222
+
+streams:
+  - name: STREAM_INTRA_CAPITAL
+    subjects:
+      - bus.intra.capital.>
+    storage: file
+
+consumers:
+  - durable: COMM_CAPITAL_INTRA
+    stream: STREAM_INTRA_CAPITAL
+    filter: bus.intra.capital.>

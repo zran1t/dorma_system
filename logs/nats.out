@@ -1,0 +1,35 @@
+[26629] 2025/08/18 18:38:26.152456 [INF] Starting nats-server
+[26629] 2025/08/18 18:38:26.152542 [INF]   Version:  2.11.8
+[26629] 2025/08/18 18:38:26.152546 [INF]   Git:      [not set]
+[26629] 2025/08/18 18:38:26.152550 [INF]   Name:     dorma-nats
+[26629] 2025/08/18 18:38:26.152553 [INF]   Node:     JA51XfZ3
+[26629] 2025/08/18 18:38:26.152560 [INF]   ID:       NBNGNVR4HR74ZVJ7TQUQZRKBEIYSIJ3PLPXAICU3OQGDNTKMSDLQDUGL
+[26629] 2025/08/18 18:38:26.152573 [INF] Using configuration file: /Users/tingan/Documents/dorma_system/configs/nats/server.conf (sha256:1ab27c8a30d760416aa86732300be41d3b3b1d8b9e0291b32be6d3afd883b34d)
+[26629] 2025/08/18 18:38:26.152901 [INF] Starting http monitor on 0.0.0.0:8222
+[26629] 2025/08/18 18:38:26.152962 [INF] Starting JetStream
+[26629] 2025/08/18 18:38:26.153184 [INF]     _ ___ _____ ___ _____ ___ ___   _   __  __
+[26629] 2025/08/18 18:38:26.153193 [INF]  _ | | __|_   _/ __|_   _| _ \ __| /_\ |  \/  |
+[26629] 2025/08/18 18:38:26.153198 [INF] | || | _|  | | \__ \ | | |   / _| / _ \| |\/| |
+[26629] 2025/08/18 18:38:26.153201 [INF]  \__/|___| |_| |___/ |_| |_|_\___/_/ \_\_|  |_|
+[26629] 2025/08/18 18:38:26.153203 [INF] 
+[26629] 2025/08/18 18:38:26.153205 [INF]          https://docs.nats.io/jetstream
+[26629] 2025/08/18 18:38:26.153207 [INF] 
+[26629] 2025/08/18 18:38:26.153209 [INF] ---------------- JETSTREAM ----------------
+[26629] 2025/08/18 18:38:26.153223 [INF]   Max Memory:      1.00 GB
+[26629] 2025/08/18 18:38:26.153227 [INF]   Max Storage:     10.00 GB
+[26629] 2025/08/18 18:38:26.153230 [INF]   Store Directory: "jetstream/jetstream"
+[26629] 2025/08/18 18:38:26.153232 [INF]   API Level:       1
+[26629] 2025/08/18 18:38:26.153234 [INF] -------------------------------------------
+[26629] 2025/08/18 18:38:26.153516 [INF] Listening for client connections on 0.0.0.0:4222
+[26629] 2025/08/18 18:38:26.153625 [INF] Server is ready
+[26629] 2025/08/23 15:36:49.409750 [WRN] 127.0.0.1:53460 - cid:55 - Invalid JetStream request '$G > $JS.API.STREAM.CREATE.STREAM_INTRA_INITIALIZATION': json: cannot unmarshal number 604800000000000000000000 into Go struct field StreamConfigRequest.StreamConfig.max_age of type time.Duration
+[26629] 2025/08/23 15:36:49.412176 [WRN] 127.0.0.1:53460 - cid:55 - Invalid JetStream request '$G > $JS.API.STREAM.UPDATE.STREAM_INTRA_INITIALIZATION': json: cannot unmarshal number 604800000000000000000000 into Go struct field StreamConfigRequest.StreamConfig.max_age of type time.Duration
+[26629] 2025/09/02 21:54:22.404792 [WRN] Filestore [STREAM_INTRA_INITIALIZATION] loadBlock error: message block data missing
+[26629] 2025/09/02 21:54:22.405596 [ERR] Received an error looking up message for consumer '$G > STREAM_INTRA_INITIALIZATION > ': message block data missing
+[26629] 2025/09/02 21:54:59.564776 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/02 21:56:50.832590 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/02 22:02:57.537351 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/02 22:07:21.806099 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/02 22:14:40.387171 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/03 11:11:02.214556 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory
+[26629] 2025/09/03 11:11:03.573961 [ERR] JetStream failed to store a msg on stream '$G > STREAM_INTER': error opening msg block file ["jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk"]: open jetstream/jetstream/$G/streams/STREAM_INTER/msgs/2.blk: no such file or directory

@@ -1,0 +1,7 @@
+[Redis Server]
+Version: 8.2.0
+Installed via: Homebrew (macOS dev), equivalent setup on production
+
+[NATS Server]
+Version: 2.11.8
+Installed via: Homebrew (macOS dev), equivalent setup on production

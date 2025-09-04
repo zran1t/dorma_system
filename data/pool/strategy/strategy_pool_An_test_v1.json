@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hash": "c6514495b4e18fdc38a2ee19234c7fc9d106fb5abb8a2fd69a97434efdc17554",
+  "payload": {
+    "usr_id": "An_test",
+    "strategies": [
+      {
+        "strategy_id": "test",
+        "symbol": [
+          "test"
+        ]
+      }
+    ]
+  },
+  "source": "api"
+}

@@ -1,0 +1,16 @@
+{
+  "version": 8,
+  "hash": "96f7ff6e63a8671f843b520e1f0d4532e4cb9e5abd7cf4c18ac681615972a2fb",
+  "payload": {
+    "usr_id": "string",
+    "strategies": [
+      {
+        "strategy_id": "string",
+        "symbol": [
+          "string"
+        ]
+      }
+    ]
+  },
+  "source": "api"
+}

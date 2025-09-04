@@ -1,0 +1,16 @@
+{
+  "version": 4,
+  "hash": "ccf6803460fdc5714b6646c5ea3a8141b17a16a34b873e9de6b743c22395e367",
+  "payload": {
+    "usr_id": "An_test1",
+    "strategies": [
+      {
+        "strategy_id": "test32",
+        "symbol": [
+          "tes232t"
+        ]
+      }
+    ]
+  },
+  "source": "api"
+}
