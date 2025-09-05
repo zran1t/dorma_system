@@ -2,56 +2,59 @@ version: 1
 nats:
   url: nats://127.0.0.1:4222
 
+routes:
+  dept_to_kol_prefix: "bus.intra.initialization.dept2kol"
+  kol_to_dept_prefix: "bus.intra.initialization.kol2dept"
+
 streams:
   - name: STREAM_INTRA_INITIALIZATION
-    subjects: [ "bus.intra.initialization.>" ]
+    subjects: ["bus.intra.initialization.>"]
     storage: file
-    # 建議補強（可選）—— 提升可靠性 / 可追溯
-    retention: limits            # 依流量限制保留；也可用 interest/workqueue 視需求
-    discard: old                   # 超過限制丟最舊
-    max_msgs_per_subject: -1
+    retention: limits
+    discard: old
     max_msgs: -1
+    max_msgs_per_subject: -1
     max_bytes: -1
-    max_age: 168h                # 例：保留 7 天（依你需要調整）
-    duplicate_window: 2m               # 去重時間窗
-    num_replicas: 1                  # 複本數：單機=1；叢集建議=3
-    allow_rollup_hdrs: true          # 允許 rollup（可用於彙總/截斷歷史）
-    allow_direct: false              # 直接讀取優化（預設關閉，視需求開啟）
-    deny_delete: false               # 保護：禁止刪單筆訊息（生產可視需要改 true）
-    deny_purge: false                # 保護：禁止整倉清空（生產可視需要改 true）
+    max_age: 168h
+    duplicate_window: 2m
+    num_replicas: 1
+    allow_rollup_hdrs: true
+    allow_direct: false
+    deny_delete: false
+    deny_purge: false
 
 consumers:
-  # 部門通訊處室：收「科別 → 部門」的訊息
-  - durable: INIT_DEPT_RX
-    stream: STREAM_INTRA_INITIALIZATION
-    filter: bus.intra.initialization.kol2dept.>
-    mode: push                   # ← 用 push 才能常駐、無 timeout
-    deliver_subject: _AUTO       # ← 讓程式端 new_inbox，自動產生
-    ack_policy: explicit         # ← 必須手動 ack 才算處理成功
-    ack_wait: 30s                # ← 30 秒內沒 ack 視為失敗，觸發重送
-    max_deliver: 10              # ← 最多重送 10 次（避免無限重試）
-    backoff: [1s,2s,5s,10s]      # ← 漸進退避重送
-    max_ack_pending: 1024        # ← 未 ack 上限，防止壓爆
-    deliver_policy: new          # ← 從最早可用訊息開始（新部署不漏歷史）
-    replay_policy: instant       # ← 重播速度：立即（非真實時間）
-    idle_heartbeat: 0           # ← 空閒時送心跳，偵測斷線
-    flow_control: false               # 啟用流控，避免積壓
-    rate_limit_bps: 0                # 限速（bytes/sec）；0 表不限
-    headers_only: false              # 僅傳 headers（省流量）；false 表示傳完整訊息
-    sample_freq: "0%"                 # 監測採樣（如需全量監測可設 "100%"）
-
-  # 科別通訊處室：收「部門 → 科別」的訊息
+  # 科別通訊處室：收「部門 → 科別」
   - durable: INIT_KOL_RX
     stream: STREAM_INTRA_INITIALIZATION
     filter: bus.intra.initialization.dept2kol.>
     mode: push
     deliver_subject: _AUTO
+    deliver_policy: new
     ack_policy: explicit
     ack_wait: 30s
     max_deliver: 10
-    backoff: [1s,2s,5s,10s]
+    backoff: [1s, 2s, 5s, 10s]
     max_ack_pending: 1024
+    replay_policy: instant
+    idle_heartbeat: 0
+    flow_control: false
+    rate_limit_bps: 0
+    headers_only: false
+    sample_freq: "0%"
+
+  # 部門通訊處室：收「科別 → 部門」
+  - durable: INIT_DEPT_RX
+    stream: STREAM_INTRA_INITIALIZATION
+    filter: bus.intra.initialization.kol2dept.>
+    mode: push
+    deliver_subject: _AUTO
     deliver_policy: new
+    ack_policy: explicit
+    ack_wait: 30s
+    max_deliver: 10
+    backoff: [1s, 2s, 5s, 10s]
+    max_ack_pending: 1024
     replay_policy: instant
     idle_heartbeat: 0
     flow_control: false

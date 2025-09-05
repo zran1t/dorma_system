@@ -1,67 +1,34 @@
 # initialization_dpt/init_kline_kol/kol_comm_room/communicator.py
+from __future__ import annotations
+
 import asyncio
-import json
 from pathlib import Path
-from nats.aio.msg import Msg
+from common.bus_config import BusConfig
+from common.bus_runtime import BusRuntime
+from .communicator_core import consume_intra_dept
 
-from common.bus_runtime import ChannelRuntime
-from injector_api.schemas.strategy_pools import StrategySubmitRequest
+def _root() -> Path:
+    return Path(__file__).resolve().parents[3]
 
-# === 路徑設定 ===
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = _root()
 INTRA_INIT_YAML = ROOT / "configs" / "channels" / "initialization.yaml"
 if not INTRA_INIT_YAML.exists():
-    raise FileNotFoundError(f"找不到 initialization.yaml：{INTRA_INIT_YAML}\n請確認是從專案根目錄執行，或調整 parents 層級。")
+    raise FileNotFoundError(f"找不到 initialization.yaml：{INTRA_INIT_YAML}\n請確認執行位置或調整 parents 層級。")
 
-# === Durable 名稱（對應 YAML）===
-DURABLE_INTRA_FROM_DEPT = "INIT_KOL_RX"  # initialization.yaml（dept → kol）
+async def main() -> None:
+    """
+    主流程：讀 initialization.yaml → 連 NATS → 起 Dept→Kol 消費迴圈。
+    """
+    intra_cfg = BusConfig.load(INTRA_INIT_YAML)
+    durable_intra_from_dept = intra_cfg.durable_for(intra_cfg.routes.dept2kol_prefix)
 
-# ========= Handlers =========
+    intra_rt = await BusRuntime.connect(intra_cfg)
 
-async def _handle_from_dept(req: StrategySubmitRequest, msg: Msg) -> None:
-    """科別通訊處室：收到部門傳來的初始化策略池訊息"""
-    payload = req.model_dump(exclude_none=True)
-    print("📥 科別通訊處室 收到部門的訊息：")
-    print(json.dumps(payload, ensure_ascii=False, indent=2))
-    await msg.ack()
-    print("✅ 已回覆 NATS：dept→kol 的訊息處理完成")
-
-# ========= Consumer =========
-
-async def _consume_intra_dept(intra_rt: ChannelRuntime):
-    """Intra (dept→kol) → Kol"""
-    q = intra_rt.get_push_queue(DURABLE_INTRA_FROM_DEPT)
-    if q is None:
-        raise RuntimeError(
-            f"找不到 intra durable={DURABLE_INTRA_FROM_DEPT} 的 push queue；"
-            f"請檢查 {INTRA_INIT_YAML} 是否有正確設定"
-        )
-    print(f"🟢 科別通訊處室正在監聽 Intra 通道，durable={DURABLE_INTRA_FROM_DEPT}")
-    while True:
-        msg: Msg = await q.get()
-        try:
-            req = StrategySubmitRequest.model_validate_json(msg.data)
-        except Exception as e:
-            print(f"❌ Dept→Kol schema 驗證失敗：{e}")
-            await msg.ack()
-            continue
-        try:
-            await _handle_from_dept(req, msg)
-        except Exception as e:
-            print(f"💥 Kol handler 例外：{e}")
-            try:
-                await msg.nak()
-            except Exception:
-                pass
-
-# ========= main =========
-
-async def main():
-    intra_rt = await ChannelRuntime.from_yaml(INTRA_INIT_YAML)
-    print("✅ 科別通訊處室 已就緒.")
+    print("✅ 科別通訊處室（Kol Communication Room）已就緒")
     print(f"   內部通道 : {INTRA_INIT_YAML}")
+    print(f"   監聽 Intra durable（dept→kol）: {durable_intra_from_dept}")
 
-    task = asyncio.create_task(_consume_intra_dept(intra_rt))
+    task = asyncio.create_task(consume_intra_dept(intra_rt, durable_intra_from_dept))
     try:
         await task
     except asyncio.CancelledError:
@@ -69,7 +36,7 @@ async def main():
     finally:
         if not task.done():
             task.cancel()
-        await intra_rt.drain()
+        await intra_rt.close()
         print("👋 已關閉連線")
 
 if __name__ == "__main__":

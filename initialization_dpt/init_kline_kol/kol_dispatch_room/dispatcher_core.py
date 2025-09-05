@@ -1,8 +1,12 @@
 # initialization_dpt/init_kline_kol/kol_dispatch_room/dispatcher_core.py
+from __future__ import annotations
+
 import pathlib
 import subprocess
 import platform
 import shlex
+
+__all__ = ["launch_submodules"]
 
 # 這個檔在 .../initialization_dpt/init_kline_kol/kol_dispatch_room/
 # 回到專案根要往上 3 級（parents[3]）
@@ -15,6 +19,9 @@ SUB_MODULES = [
 ]
 
 def _resolve_python(base_dir: pathlib.Path) -> str:
+    """
+    解析虛擬環境中的 python 執行路徑；找不到則退回系統 python。
+    """
     if platform.system() == "Windows":
         cand = base_dir / ".venv" / "Scripts" / "python.exe"
         return str(cand) if cand.exists() else "python"
@@ -22,7 +29,10 @@ def _resolve_python(base_dir: pathlib.Path) -> str:
         cand = base_dir / ".venv" / "bin" / "python"
         return str(cand) if cand.exists() else "python3"
 
-def launch_submodules():
+def launch_submodules() -> None:
+    """
+    在新終端/新程序中啟動 SUB_MODULES 列出的模組（使用 -m）。
+    """
     py = _resolve_python(BASE_DIR)
     system = platform.system()
 

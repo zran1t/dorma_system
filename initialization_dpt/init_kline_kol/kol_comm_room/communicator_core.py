@@ -7,13 +7,6 @@ from nats.aio.msg import Msg
 from injector_api.schemas.strategy_pools import StrategySubmitRequest
 from common.bus_runtime import BusRuntime
 
-__all__ = [
-    "handle_from_inter",
-    "handle_from_kol",
-    "consume_inter",
-    "consume_intra_kol",
-]
-
 # ========= Inter → Dept → Intra(dept→kol) =========
 async def handle_from_inter(req: StrategySubmitRequest, inter_msg: Msg, intra_runtime: BusRuntime) -> None:
     """
@@ -26,7 +19,7 @@ async def handle_from_inter(req: StrategySubmitRequest, inter_msg: Msg, intra_ru
     回傳:
         None
     """
-    # Pydantic v2：先轉 dict，再 json.dumps(ensure_ascii=False)
+    # Pydantic v2：先轉 dict，再用 json.dumps(ensure_ascii=False) 確保中文不轉義
     payload_dict = req.model_dump(exclude_none=True)
     payload_bytes = json.dumps(payload_dict, ensure_ascii=False).encode("utf-8")
 
