@@ -1,0 +1,24 @@
+[Python]
+pyenv + virtualenv
+Python 3.11.9
+
+[Development Environment]
+macOS, MacBook Air M4, RAM 16GB, SSD 512GB
+
+[Deployment Environment]
+Windows 11 x64, i5-12600KF, RTX 4060 Ti, RAM 32GB
+Storage: 2x Crucial P3 Plus 1TB SSD (system/data), 1TB HDD backup
+
+[Servers]
+Redis Server: 8.2.0 (installed via Homebrew on macOS dev, equivalent setup on prod)
+NATS Server: 2.11.8 (installed via Homebrew on macOS dev, equivalent setup on prod)
+
+[Python Dependencies]
+fastapi==0.116.1
+pydantic==2.11.7
+uvicorn==0.30.6
+redis==6.4.0
+nats-py==2.11.0
+aiohttp==3.12.15
+PyYAML==6.0.2
+jsonschema==4.19.0  

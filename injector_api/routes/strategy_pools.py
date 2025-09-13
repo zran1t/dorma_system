@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from ..service.injector_service import process_strategy_injection    # ← 兩個點：上一層
-from ..schemas.strategy_pools import StrategySubmitRequest          # ← 兩個點：上一層
+from ..service.service_entry import run_init_service   
+from ..schemas.strategy_pools import StrategySubmitRequest          
 
 router = APIRouter()
 
 @router.post("/inject")
 async def inject_entry(strategy: StrategySubmitRequest):
-    await process_strategy_injection(strategy)
+    await run_init_service(strategy)
     return {"status": "ok"}

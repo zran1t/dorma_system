@@ -1,44 +1,87 @@
-version: 1
+# configs/channels/inter.yaml
+# Inter-department (dpt <-> dpt) 固定一對一路由；API → 初始化部門走同一路徑
+# ─────────────────────────────────────────────────────────────────────
+# 使用準則：
+# 1) Publisher 永遠發「原始 subject」：inter.dpt.{dept}.comm.in
+# 2) Subscriber 永遠訂閱「deliver subject」：inter.dpt.{dept}.comm.in.deliver
+# 3) 每個部門一條 consumer（deliver 不支援萬用字元），本檔已列出所有部門。
+
 nats:
-  url: nats://127.0.0.1:4222
+  servers:
+    - "nats://127.0.0.1:4222"
 
-routes:
-  dept_to_kol_prefix: "bus.inter.dept2kol"
-  kol_to_dept_prefix: "bus.inter.kol2dept"
+subjects:
+  namespace: "inter"
 
-streams:
-  - name: STREAM_INTER
-    subjects: ["bus.inter.>"]
-    storage: file
-    retention: limits
-    discard: old
-    max_msgs: -1
-    max_msgs_per_subject: -1
-    max_bytes: -1
-    max_age: 168h
-    duplicate_window: 2m
-    num_replicas: 1
-    allow_rollup_hdrs: true
-    allow_direct: false
-    deny_delete: false
-    deny_purge: false
+  # 固定模板（Publisher / Subscriber）
+  to_department_tpl:     "inter.dpt.{dept}.comm.in"            # 發佈：對單一部門直送
+  to_department_deliver: "inter.dpt.{dept}.comm.in.deliver"    # 訂閱：接收 deliver 並 ACK
+  from_department_tpl:   "inter.dpt.{dept}.comm.out"           # （選用）部門對外輸出
 
-consumers:
-  # 部門通訊處室：只收 Inter → Dept（dept→kol）
-  - durable: INIT_INTER_DEPT2KOL
-    stream: STREAM_INTER
-    filter: bus.inter.dept2kol.>
-    mode: push
-    deliver_subject: DELIVER.INTER.INIT_DEPT2KOL   # 固定字串，方便 CLI 驗證
-    deliver_policy: all
-    ack_policy: explicit
-    ack_wait: 30s
-    max_deliver: 10
-    backoff: [1s, 2s, 5s, 10s]
-    max_ack_pending: 1024
-    replay_policy: instant
-    idle_heartbeat: 0
-    flow_control: false
-    rate_limit_bps: 0
-    headers_only: false
-    sample_freq: "0%"
+  # 部門清單（固定不常改）
+  departments:
+    - initialization
+    - data
+    - risk
+    - strategy
+    - capital
+
+  # 範例（初始化部門）：
+  # 發佈 → inter.dpt.initialization.comm.in
+  # 訂閱 → inter.dpt.initialization.comm.in.deliver
+  # 對外 → inter.dpt.initialization.comm.out
+
+jetstream:
+  streams:
+    # 直送流：存所有部門的 comm.in（確保直送也走 JS + ACK）
+    - name: "INTER_TO_DEPT_STREAM"
+      subjects:
+        - "inter.dpt.*.comm.in"
+      storage: file
+      retention: limits
+      discard: old
+      duplicates: 2m
+
+  consumers:
+    # 每個部門一條 deliver consumer（固定拓樸）
+    - stream: "INTER_TO_DEPT_STREAM"
+      name: "DIRECT_to_initialization"
+      durable_name: "DIRECT_durable_initialization"
+      filter_subject: "inter.dpt.initialization.comm.in"
+      deliver_subject: "inter.dpt.initialization.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      # 建議：max_deliver: 5
+      # 建議：backoff: [1s, 3s, 10s, 30s]
+
+    - stream: "INTER_TO_DEPT_STREAM"
+      name: "DIRECT_to_data"
+      durable_name: "DIRECT_durable_data"
+      filter_subject: "inter.dpt.data.comm.in"
+      deliver_subject: "inter.dpt.data.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+
+    - stream: "INTER_TO_DEPT_STREAM"
+      name: "DIRECT_to_risk"
+      durable_name: "DIRECT_durable_risk"
+      filter_subject: "inter.dpt.risk.comm.in"
+      deliver_subject: "inter.dpt.risk.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+
+    - stream: "INTER_TO_DEPT_STREAM"
+      name: "DIRECT_to_strategy"
+      durable_name: "DIRECT_durable_strategy"
+      filter_subject: "inter.dpt.strategy.comm.in"
+      deliver_subject: "inter.dpt.strategy.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+
+    - stream: "INTER_TO_DEPT_STREAM"
+      name: "DIRECT_to_capital"
+      durable_name: "DIRECT_durable_capital"
+      filter_subject: "inter.dpt.capital.comm.in"
+      deliver_subject: "inter.dpt.capital.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s

@@ -1,63 +1,108 @@
-version: 1
+# configs/channels/initialization.yaml
+# Initialization (dpt <-> kol) with JetStream + explicit ACK
+# ─────────────────────────────────────────────────────────────────────
+# 使用準則：
+# 1) Publisher（發佈端）永遠發「原始 subject」：
+#    - 部門→kol：init.dpt.initialization.kol.{kol}.comm.in
+#    - kol→部門：init.dpt.initialization.kol.{kol}.comm.out
+#    - 部門廣播：init.dpt.initialization.broadcast
+# 2) Subscriber（接收端）永遠訂閱「deliver subject」：
+#    - 部門收 kol 上行：init.dpt.initialization.comm.in.deliver
+#    - kol 收部門直送：init.dpt.initialization.kol.{kol}.comm.in.deliver
+#    - kol 收廣播（由扇出 deliver 到各 kol 的 .comm.in.deliver）
+# 3) JetStream Consumer 的 deliver_subject 不能使用萬用字元（*），
+#    故「廣播扇出」與「直送」在多 kol 時必須「每個 kol 建一條 consumer」。
+# 4) 明確 ACK（explicit）＋ duplicates 窗口（2m）保障「至少一次」與去重。
+
 nats:
-  url: nats://127.0.0.1:4222
+  servers:
+    - "nats://127.0.0.1:4222"
 
-routes:
-  dept_to_kol_prefix: "bus.intra.initialization.dept2kol"
-  kol_to_dept_prefix: "bus.intra.initialization.kol2dept"
+subjects:
+  namespace:  "init"
+  department: "initialization_dpt"
 
-streams:
-  - name: STREAM_INTRA_INITIALIZATION
-    subjects: ["bus.intra.initialization.>"]
-    storage: file
-    retention: limits
-    discard: old
-    max_msgs: -1
-    max_msgs_per_subject: -1
-    max_bytes: -1
-    max_age: 168h
-    duplicate_window: 2m
-    num_replicas: 1
-    allow_rollup_hdrs: true
-    allow_direct: false
-    deny_delete: false
-    deny_purge: false
+  # 部門固定通道
+  department_broadcast: "init.dpt.initialization.broadcast"     # 部門→全部 kol（廣播）
+  department_comm_in:   "init.dpt.initialization.comm.in"       # kol→部門（上行匯聚收件匯流排）
+  department_comm_out:  "init.dpt.initialization.comm.out"      # 部門→外部（預留，實作見 inter.yaml）
 
-consumers:
-  # 科別通訊處室：收「部門 → 科別」
-  - durable: INIT_KOL_RX
-    stream: STREAM_INTRA_INITIALIZATION
-    filter: bus.intra.initialization.dept2kol.>
-    mode: push
-    deliver_subject: _AUTO
-    deliver_policy: new
-    ack_policy: explicit
-    ack_wait: 30s
-    max_deliver: 10
-    backoff: [1s, 2s, 5s, 10s]
-    max_ack_pending: 1024
-    replay_policy: instant
-    idle_heartbeat: 0
-    flow_control: false
-    rate_limit_bps: 0
-    headers_only: false
-    sample_freq: "0%"
+  # dpt <-> kol 的模板（Publisher 用原始 subject；Subscriber 訂閱 deliver）
+  to_kol_tpl:     "init.dpt.initialization.kol.{kol}.comm.in"           # 部門→單一 kol（直送）
+  to_kol_deliver: "init.dpt.initialization.kol.{kol}.comm.in.deliver"   # kol 訂閱
+  from_kol_tpl:   "init.dpt.initialization.kol.{kol}.comm.out"          # kol→部門（上行）
 
-  # 部門通訊處室：收「科別 → 部門」
-  - durable: INIT_DEPT_RX
-    stream: STREAM_INTRA_INITIALIZATION
-    filter: bus.intra.initialization.kol2dept.>
-    mode: push
-    deliver_subject: _AUTO
-    deliver_policy: new
-    ack_policy: explicit
-    ack_wait: 30s
-    max_deliver: 10
-    backoff: [1s, 2s, 5s, 10s]
-    max_ack_pending: 1024
-    replay_policy: instant
-    idle_heartbeat: 0
-    flow_control: false
-    rate_limit_bps: 0
-    headers_only: false
-    sample_freq: "0%"
+  # 本部門要服務的 kol 清單（起步單一 kol，可於此增加）
+  kols:
+    - kol   # 例如：kol；未來可加 kolA、kolB…（見下方 consumers 展開準則）
+
+  # 展開示例（以 kol 為例）
+  # 下行（廣播）： init.dpt.initialization.broadcast
+  # 下行（直送）： init.dpt.initialization.kol.kol.comm.in
+  # 下行（接收）： init.dpt.initialization.kol.kol.comm.in.deliver  ← kol 端訂閱（ACK）
+  # 上行（回報）： init.dpt.initialization.kol.kol.comm.out
+  # 匯聚收件：     init.dpt.initialization.comm.in  ← JS deliver → *.deliver
+
+jetstream:
+  streams:
+    # ① 廣播流：存部門廣播
+    - name: "INIT_BROADCAST_STREAM"
+      subjects: ["init.dpt.initialization.broadcast"]
+      storage: file
+      retention: limits
+      discard: old
+      duplicates: 2m
+
+    # ② 上行流：存所有 kol 的回報
+    - name: "INIT_KOL_OUT_STREAM"
+      subjects: ["init.dpt.initialization.kol.*.comm.out"]
+      storage: file
+      retention: limits
+      discard: old
+      duplicates: 2m
+
+    # ③ 直送流：存部門直送到各 kol 的指令（確保直送也走 JS + ACK）
+    - name: "INIT_TO_KOL_STREAM"
+      subjects: ["init.dpt.initialization.kol.*.comm.in"]
+      storage: file
+      retention: limits
+      discard: old
+      duplicates: 2m
+
+  consumers:
+    # ── 廣播扇出（部門 → 全部 kol）────────────────────────────────────
+    # 注意：deliver_subject 不支援萬用字元（*）
+    # 起步：單一 kol（kol），若新增 kolA、kolB… → 請複製此 consumer 並替換 {kol}
+    - stream: "INIT_BROADCAST_STREAM"
+      name: "BC_to_kol"
+      durable_name: "BC_durable_kol"
+      filter_subject: "init.dpt.initialization.broadcast"
+      deliver_subject: "init.dpt.initialization.kol.kol.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      # 建議（可開啟）：max_deliver: 5
+      # 建議（可開啟）：backoff: [1s, 3s, 10s, 30s]
+
+    # ── 上行匯聚（所有 kol → 部門）───────────────────────────────────
+    # JS 匯聚 → 統一 deliver 到部門 comm.in.deliver（部門只要訂這條即可）
+    - stream: "INIT_KOL_OUT_STREAM"
+      name: "ALL_kol_to_dpt"
+      durable_name: "ALL_kol_durable"
+      filter_subject: "init.dpt.initialization.kol.*.comm.out"
+      deliver_subject: "init.dpt.initialization.comm.in.deliver"   # ← 改為 .deliver（統一）
+      ack_policy: explicit
+      ack_wait: 30s
+      # 建議：max_deliver: 5
+      # 建議：backoff: [1s, 3s, 10s, 30s]
+
+    # ── 直送（部門 → 單一 kol）──────────────────────────────────────
+    # 注意：同樣需要 per-kol 一條 consumer；此處以 kol 起步
+    - stream: "INIT_TO_KOL_STREAM"
+      name: "DIRECT_to_kol"
+      durable_name: "DIRECT_durable_kol"
+      filter_subject: "init.dpt.initialization.kol.kol.comm.in"
+      deliver_subject: "init.dpt.initialization.kol.kol.comm.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      # 建議：max_deliver: 5
+      # 建議：backoff: [1s, 3s, 10s, 30s]

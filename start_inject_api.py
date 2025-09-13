@@ -4,6 +4,7 @@ import platform
 import shlex
 import pathlib
 import subprocess
+import sys
 
 # === 專案根目錄（以本檔所在目錄為準）===
 BASE_DIR = pathlib.Path(__file__).parent.resolve()
@@ -65,17 +66,23 @@ def run_uvicorn():
         osa = f'osascript -e \'tell application "Terminal" to do script "{inner_cmd_escaped}"\''
         subprocess.Popen(osa, shell=True)
         print("✅ 已在新的 macOS Terminal 視窗啟動 uvicorn")
+        
+        
 
     elif system == "Windows":
         # Windows：新開 cmd 視窗（/k 保留視窗，方便看 log）
         cmd = f'start "" cmd /k cd /d "{BASE_DIR}" && {base_cmd}'
         subprocess.Popen(cmd, shell=True)
         print("✅ 已在新的 Windows cmd 視窗啟動 uvicorn")
+        sys.exit(0)
 
     else:
         # Linux（若有需要可自行改為 gnome-terminal 等）
         subprocess.Popen(base_cmd, cwd=BASE_DIR, shell=True)
         print("✅ 已在目前終端機背景啟動 uvicorn（Linux）")
+    os._exit(0)
+    
 
 if __name__ == "__main__":
     run_uvicorn()
+    

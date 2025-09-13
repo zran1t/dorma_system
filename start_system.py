@@ -1,95 +1,104 @@
 # start_system.py
+# 清單驅動啟動器：
+# 1) 集中 Reset + Bootstrap + Audit（由 runtime_bootstrap.py 執行，並將報表落地）
+# 2) 依清單逐一在新 Terminal 視窗啟動各 dispatcher/communicate
+
 from __future__ import annotations
-"""
-啟動系統腳本：
-- 以「模組模式（python -m）」啟動各部門的「部門調度室（dispatcher）」
-- 每個子模組在新終端視窗啟動（macOS: Terminal, Windows: cmd, 其他：當前視窗前景/背景）
-- 路徑固定到專案根，避免相對路徑飄移
 
-輸出全部為繁體中文，便於閱讀與排障。
-"""
-
-import subprocess
-import pathlib
-import sys
+import asyncio
+import os
 import shlex
-import platform
+import subprocess
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
 
-BASE_DIR = pathlib.Path(__file__).parent.resolve()
+from tools.runtime_bootstrap import centralized_reset_bootstrap
 
-# === 以「模組路徑」列出要啟動的部門調度室 ===
-MODULES = [
-    "initialization_dpt.dpt_dispatch_room.dispatcher",
-    # "risk_dpt.dispatch_room.dispatcher",
-    # "strategy_dpt.dispatch_room.dispatcher",
-    # "data_dpt.dispatch_room.dispatcher",
-    # "capital_dpt.dispatch_room.dispatcher",
+# ───────────────────────── 使用者可調區 ─────────────────────────
+
+LAUNCH_ITEMS: List[dict] = [
+    {
+        "title": "初始化部門調度室（會再自行啟 kol 調度室）",
+        "script": "initialization_dpt/dpt_dispatch_room/dispatcher.py",
+        "auto_close": False,
+        "delay_sec": 0,
+    },
 ]
 
+PY_EXE = sys.executable
+EXTRA_ENV = {
+    # "NATS_URL": "nats://127.0.0.1:4222",
+}
 
-def _resolve_python(base_dir: pathlib.Path) -> str:
+# ───────────────────────── 內部實作區 ─────────────────────────
+
+@dataclass
+class LaunchItem:
+    title: str
+    script: str
+    auto_close: bool = False
+    delay_sec: int = 3
+
+
+def _as_items(raw: List[dict]) -> List[LaunchItem]:
+    return [LaunchItem(**r) for r in raw]
+
+
+def _project_root() -> Path:
+    # 以此檔所在路徑作為專案根
+    return Path(__file__).resolve().parent
+
+
+def _osascript_run(cmd: str) -> None:
+    """在 macOS 開新 Terminal 視窗執行 cmd。"""
+    osa = f'''tell application "Terminal"
+        do script "{cmd}"
+        activate
+    end tell'''
+    subprocess.run(["/usr/bin/osascript", "-e", osa], check=True)
+
+
+def _compose_shell_cmd(project_root: Path, script_relpath: str, auto_close: bool, delay_sec: int) -> str:
     """
-    解析可執行的 Python 路徑：
-    - 優先使用專案根下 .venv
-    - 否則 macOS/Linux 使用 'python3'，Windows 使用 'python'
+    在新視窗中執行單一 script，並注入 PYTHONPATH=PROJECT_ROOT 以確保跨資料夾 import 正常。
     """
-    if platform.system() == "Windows":
-        cand = base_dir / ".venv" / "Scripts" / "python.exe"
-        return str(cand) if cand.exists() else "python"
-    else:
-        cand = base_dir / ".venv" / "bin" / "python"
-        return str(cand) if cand.exists() else "python3"
+    root_str = str(project_root)
+    script = shlex.quote(script_relpath)
+    py = shlex.quote(PY_EXE)
+    export_py_path = f'export PYTHONPATH={shlex.quote(root_str)}:$PYTHONPATH'
+    base = f"clear; cd {shlex.quote(root_str)} && {export_py_path} && {py} {script}"
+    if auto_close:
+        base = f"{base}; sleep {delay_sec}; exit"
+    return base
 
+# ───────────────────────── 主入口 ─────────────────────────
 
-def _launch_module_in_new_terminal(py: str, module: str) -> None:
-    """
-    依作業系統在新終端視窗啟動指定模組。
-    """
-    system = platform.system()
+async def main() -> None:
+    # 1) 集中 Reset + Bootstrap + Audit（一次性呼叫；也會把稽核報表落地）
+    await centralized_reset_bootstrap(
+        do_audit=True,
+        inter_outfile="reports/inter_audit.json",
+        init_outfile="reports/init_audit.json",
+        timestamped_reports=True,
+    )
 
-    if system == "Darwin":
-        # macOS：使用 AppleScript 打開新的 Terminal 視窗
-        inner_cmd = f'clear; cd "{BASE_DIR}" && {shlex.quote(py)} -m {module}'
-        inner_cmd_escaped = inner_cmd.replace("\\", "\\\\").replace('"', '\\"')
-        osa = (
-            'osascript -e '
-            f'\'tell application "Terminal" to do script "{inner_cmd_escaped}"\''
-        )
-        subprocess.Popen(osa, shell=True)
+    # 2) 逐一啟動清單內模組
+    items = _as_items(LAUNCH_ITEMS)
+    project_root = _project_root()
 
-    elif system == "Windows":
-        # Windows：在新 cmd 視窗執行，保留視窗（/k）
-        cmd = (
-            f'start "" cmd /k '
-            f'cd /d "{BASE_DIR}" && {shlex.quote(py)} -m {module}'
-        )
-        subprocess.Popen(cmd, shell=True)
+    if EXTRA_ENV:
+        os.environ.update(EXTRA_ENV)
 
-    else:
-        # 其他 *nix：於當前終端啟動（如需新視窗可改用 gnome-terminal / xterm 等）
-        subprocess.Popen([py, "-m", module], cwd=BASE_DIR)
+    print("====== 啟動各模組 ======")
+    for item in items:
+        cmd = _compose_shell_cmd(project_root, item.script, item.auto_close, item.delay_sec)
+        print(f"▶ {item.title}  →  {item.script}")
+        _osascript_run(cmd)
 
-
-def launch_all() -> None:
-    """
-    逐一啟動 MODULES 內的部門調度室。
-    """
-    py = _resolve_python(BASE_DIR)
-
-    if not MODULES:
-        print("⚠️  沒有待啟動的模組（MODULES 為空）。")
-        sys.exit(1)
-
-    for module in MODULES:
-        try:
-            _launch_module_in_new_terminal(py, module)
-            print(f"✅ 已啟動：{module}")
-        except Exception as e:
-            print(f"❌ 啟動失敗：{module}（{e}）")
-
-    print("✅ 所有模組已嘗試啟動（模組模式）")
-    sys.exit(0)
+    print("✅ 全部啟動指令已送出（各視窗內自行常駐/退出）")
 
 
 if __name__ == "__main__":
-    launch_all()
+    asyncio.run(main())

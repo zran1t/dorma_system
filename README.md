@@ -218,3 +218,10 @@ nats consumer ls stream_id --user module --password dorma_core                  
 
 
 source .venv/bin/activate
+
+
+
+
+
+
+./project_docs/update_project_tree.sh

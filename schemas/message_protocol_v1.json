@@ -1,0 +1,35 @@
+{
+  "trace_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-09-08T01:23:45.000Z",
+  "version": "1.0.0",
+  "layer": "inter",
+  "direction": "down",
+  "source": {
+    "type": "api",
+    "id": "api_gateway"
+  },
+  "destination": {
+    "type": "dpt",
+    "id": "initialization_dpt"
+  },
+  "history": [
+    {
+      "hop": 1,
+      "timestamp": "2025-09-08T01:23:45.000Z",
+      "from": { "type": "api", "id": "api_gateway" },
+      "to": { "type": "dept", "id": "initialization_dpt" },
+      "note": "INIT_START"
+    }
+  ],
+  "body": {
+    "message": "INIT_START",
+    "data": {
+      "usr_id": "U123",
+      "strategies": []
+    },
+    "meta": {
+      "priority": "normal",
+      "tags": ["init", "kline"]
+    }
+  }
+}

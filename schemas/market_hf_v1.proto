@@ -1,0 +1,71 @@
+syntax = "proto3";
+package market.hf.v1;
+
+
+option go_package = "dorma_system/schemas/gen/go/market/hf/v1";
+
+// 協定版本
+enum Version {
+  VERSION_UNKNOWN = 0;
+  V1 = 1;
+}
+
+// 資料類型 (feed type)
+enum FeedType {
+  FEED_UNKNOWN = 0;
+  FEED_TRADES  = 1;
+  FEED_BBO     = 2;
+  FEED_BBT     = 3;
+  FEED_ORDER   = 4;
+  FEED_OTT     = 5;
+  FEED_OTP     = 6;
+}
+
+// 買/賣方向
+enum Side {
+  SIDE_UNKNOWN = 0;
+  SIDE_BUY     = 1; // bid
+  SIDE_SELL    = 2; // ask
+}
+
+message Envelope {
+  Version ver   = 1;     // 協議版本號碼
+  FeedType feed = 2;     // 資料類型
+  uint32 src    = 3;     // 資料來源，可選，無則 0
+  bytes  body   = 4;     // 封裝序列化後的資料
+}
+
+message Common {        // 基本資訊
+  int64  ts_ns  = 1;    // 奈秒時間戳
+  uint64 seq    = 2;    // 資料序號
+  string venue  = 3;    // 交易所代碼
+  string symbol = 4;    // 標的物
+}
+
+message Trades {        // 成交明細
+  Common header = 1;    // 基本資料
+  double price  = 2;    // 成交價
+  double size   = 3;    // 成交量
+  Side   side   = 4;    // 買/賣方向
+}
+
+message Bbo {           // 最佳買賣價
+  Common header = 1;    
+  double bid_px = 2;    // 最優買價
+  double bid_sz = 3;    // 最優買價深度
+  double ask_px = 4;    // 最優賣價
+  double ask_sz = 5;    // 最優賣價深度
+}
+
+message BbtLevel {      // 訂單簿擋位
+  double px   = 1;      // 價位
+  double sz   = 2;      // 深度
+  Side   side = 3;      // 買/賣方向
+}
+
+message Bbt {                   // 訂單簿
+  Common header      = 1;       
+  bool   is_snapshot = 2;       // true=快照, false=增量
+  uint32 depth       = 3;       // 深度層數
+  repeated BbtLevel levels = 4; // 多個檔位
+}
