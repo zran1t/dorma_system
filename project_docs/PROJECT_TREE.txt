@@ -1,8 +1,10 @@
 .
 ├── .python-version
+├── README.md
 ├── capital_dpt
 │   ├── dpt_comm_room
 │   └── dpt_dispatcher_room
+├── cmd
 ├── common
 │   ├── __init__.py
 │   ├── __pycache__
@@ -20,56 +22,79 @@
 │   │   └── market.yaml
 │   ├── nats
 │   │   └── server.conf
-│   └── redis
-│       ├── redis_capital_pool.conf
-│       ├── redis_kline_pool.conf
-│       ├── redis_order_pool.conf
-│       ├── redis_position_pool.conf
-│       └── redis_strategy_pool.conf
+│   ├── redis
+│   │   ├── redis_capital_pool.conf
+│   │   ├── redis_kline_pool.conf
+│   │   ├── redis_order_pool.conf
+│   │   ├── redis_position_pool.conf
+│   │   └── redis_strategy_pool.conf
+│   └── symbol_mapping
+│       ├── binance.yaml
+│       └── okx.yaml
 ├── data_dpt
-│   ├── account_data_kol
-│   ├── analytics_data_kol
 │   ├── dpt_comm_room
-│   ├── dpt_consenssus_room
 │   ├── dpt_dispatch_room
-│   ├── dpt_watch_room
-│   └── market_data_kol
-│       └── test.py
-├── go_comm
-│   ├── nats_conn.go
-│   ├── nats_pub.go
-│   └── ws_client.go
+│   └── kols
+│       ├── account_data_kol
+│       ├── analytics_data_kol
+│       ├── hf_market_data_kol
+│       │   ├── collect_group
+│       │   │   ├── chief.go
+│       │   │   └── collector.go
+│       │   ├── exchanges
+│       │   │   ├── binance
+│       │   │   │   └── adapter.go
+│       │   │   └── okx
+│       │   │       └── adaptder.go
+│       │   ├── kol_chief
+│       │   │   └── main.go
+│       │   └── refine_group
+│       │       ├── chief.go
+│       │       └── refiner.go
+│       ├── lf_market_data_kol
+│       └── ref_data_kol
 ├── go.mod
 ├── go.sum
+├── infra
+│   ├── pubsub
+│   │   └── publisher.go
+│   ├── symbols
+│   │   └── resolver.go
+│   └── transport
+│       ├── rest
+│       └── ws
+│           ├── client.go
+│           ├── collect_base.go
+│           └── types.go
 ├── initialization_dpt
 │   ├── __init__.py
 │   ├── __pycache__
 │   ├── dpt_comm_room
 │   │   ├── __init__.py
 │   │   ├── __pycache__
-│   │   ├── communicate_core.py
-│   │   └── communicate.py
-│   ├── dpt_consensus_room
-│   │   └── None.txt
+│   │   ├── communicate.py
+│   │   └── communicate_core.py
 │   ├── dpt_dispatch_room
 │   │   ├── __init__.py
 │   │   ├── __pycache__
 │   │   └── dispatcher.py
-│   ├── dpt_watch_room
-│   │   └── stub.py
-│   └── init_kline_kol
-│       ├── init_kline.py
-│       ├── kol_comm_room
-│       │   ├── __init__.py
-│       │   ├── __pycache__
-│       │   ├── communicate_core.py
-│       │   └── communicate.py
-│       ├── kol_dispatch_room
-│       │   ├── __init__.py
-│       │   ├── __pycache__
-│       │   └── dispatcher.py
-│       └── kol_watch_room
-│           └── stub.py
+│   └── kols
+│       ├── init_account_data_kol
+│       ├── init_analytics_data_kol
+│       ├── init_lf_data_kol
+│       │   ├── init_kline.py
+│       │   ├── kol_comm_room
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   ├── communicate.py
+│       │   │   └── communicate_core.py
+│       │   ├── kol_dispatch_room
+│       │   │   ├── __init__.py
+│       │   │   ├── __pycache__
+│       │   │   └── dispatcher.py
+│       │   └── kol_watch_room
+│       │       └── stub.py
+│       └── init_ref_data_kol
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
@@ -164,14 +189,18 @@
 │                   │   ├── 1.blk
 │                   │   └── index.db
 │                   └── obs
-├── order_dpt
+├── nats_dump_report.csv
+├── nats_dump_report.json
+├── place_orders_dpt
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
+│   └── kols
 ├── project_docs
 │   ├── AI_VERSION_GUARD.txt
 │   ├── Info.txt
 │   ├── PROJECT_TREE.txt
 │   └── SERVER_VERSION.txt
 ├── pytest.ini
-├── README.md
 ├── redis_data
 │   ├── capital
 │   ├── kline
@@ -185,14 +214,20 @@
 ├── requirements.txt
 ├── risk_dpt
 │   ├── comm_room
-│   └── dispatcher_room
+│   ├── dispatch_room
+│   └── kols
+│       ├── capital_kol
+│       ├── pre_trade_kol
+│       └── system_risk_kol
 ├── schemas
-│   ├── gen
-│   │   └── go
-│   │       └── market_hf_v1.pb.go
-│   ├── market_hf_v1.proto
+│   ├── go
+│   │   └── market_stream_v1
+│   │       └── market_stream_v1.pb.go
+│   ├── market_stream_v1.proto
 │   ├── message_protocol_v1.json
-│   └── message_protocol_v1.md
+│   ├── message_protocol_v1.md
+│   ├── proto_rules.md
+│   └── symbol_schema.json
 ├── scripts
 │   ├── nats_start_all.sh
 │   ├── nats_status_check.sh
@@ -202,13 +237,19 @@
 │   └── redis_stop_all.sh
 ├── start_inject_api.py
 ├── start_system.py
+├── state_dpt
+│   ├── comm_room
+│   ├── dispatch_room
+│   └── kols
 ├── strategy_dpt
 │   ├── comm_room
-│   └── dispatcher_room
-├── test.go
+│   ├── dispatch_room
+│   └── kols
 ├── tests
 │   ├── __pycache__
 │   ├── conftest.py
+│   ├── nats_dump
+│   │   └── main.go
 │   ├── test_channel_loader.py
 │   ├── test_js_bootstrap.py
 │   ├── test_js_reset.py
@@ -218,4 +259,4 @@
     ├── __pycache__
     └── runtime_bootstrap.py
 
-96 directories, 123 files
+125 directories, 135 files

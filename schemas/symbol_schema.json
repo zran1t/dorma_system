@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CanonicalSymbol",
+  "description": "標準化的交易對命名規則，固定 USDT，三段式：BASE-USDT-TYPE",
+  "type": "string",
+  "pattern": "^[A-Z0-9]+-USDT-(SPOT|SWAP)$",
+  "examples": [
+    "BTC-USDT-SPOT",
+    "ETH-USDT-SWAP"
+  ]
+}

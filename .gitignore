@@ -1,0 +1,61 @@
+# 通用
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+.eggs/
+*.sqlite3
+.env
+.venv/
+venv/
+.Python
+
+# ======================
+# Go
+# ======================
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+
+# Go workspace
+*.log
+*.sum
+go.work
+go.work.sum
+
+# ======================
+# Rust
+# ======================
+/target/
+**/*.rs.bk
+Cargo.lock
+*.pdb
+*.exe
+*.dll
+*.dylib
+*.so
+
+# Rust coverage / test
+profraw/
+profdata/
+coverage/
