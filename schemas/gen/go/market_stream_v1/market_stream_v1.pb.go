@@ -21,71 +21,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// 各種資料型態
-type Feed int32
-
-const (
-	Feed_FEED_UNSPECIFIED Feed = 0 // 預設值：不使用
-	// OKX(1000~1999)
-	Feed_FEED_OKX_TRADES     Feed = 1000
-	Feed_FEED_OKX_BOOK       Feed = 1001
-	Feed_FEED_OKX_BBO        Feed = 1002
-	Feed_FEED_OKX_TRADES_ALL Feed = 1003
-)
-
-// Enum value maps for Feed.
-var (
-	Feed_name = map[int32]string{
-		0:    "FEED_UNSPECIFIED",
-		1000: "FEED_OKX_TRADES",
-		1001: "FEED_OKX_BOOK",
-		1002: "FEED_OKX_BBO",
-		1003: "FEED_OKX_TRADES_ALL",
-	}
-	Feed_value = map[string]int32{
-		"FEED_UNSPECIFIED":    0,
-		"FEED_OKX_TRADES":     1000,
-		"FEED_OKX_BOOK":       1001,
-		"FEED_OKX_BBO":        1002,
-		"FEED_OKX_TRADES_ALL": 1003,
-	}
-)
-
-func (x Feed) Enum() *Feed {
-	p := new(Feed)
-	*p = x
-	return p
-}
-
-func (x Feed) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Feed) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[0].Descriptor()
-}
-
-func (Feed) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[0]
-}
-
-func (x Feed) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Feed.Descriptor instead.
-func (Feed) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
-}
-
-// 方向性買或賣
+// 方向（買或賣）
 type Side int32
 
 const (
-	Side_SIDE_UNSPECIFIED Side = 0 // 預設值：不使用
+	Side_SIDE_UNSPECIFIED Side = 0 // 預設值，不使用
 	Side_SIDE_BUY         Side = 1 // 買入
 	Side_SIDE_SELL        Side = 2 // 賣出
-	Side_SIDE_UNKNOWN     Side = 3 // 未知
+	Side_SIDE_UNKNOWN     Side = 3 // 未知（來源未提供或無法判定）
 )
 
 // Enum value maps for Side.
@@ -115,11 +58,11 @@ func (x Side) String() string {
 }
 
 func (Side) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[1].Descriptor()
+	return file_market_stream_v1_proto_enumTypes[0].Descriptor()
 }
 
 func (Side) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[1]
+	return &file_market_stream_v1_proto_enumTypes[0]
 }
 
 func (x Side) Number() protoreflect.EnumNumber {
@@ -128,117 +71,17 @@ func (x Side) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Side.Descriptor instead.
 func (Side) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{1}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
 }
 
-// 辨識資料來源自哪一個交易所
-type Exchange int32
-
-const (
-	Exchange_EXCHANGE_UNSPECIFIED Exchange = 0 // 預設值：不使用
-	Exchange_EXCHANGE_OKX         Exchange = 1 // 歐易(OKX)
-	Exchange_EXCHANGE_BINANCE     Exchange = 2 // 幣安(Binance)
-)
-
-// Enum value maps for Exchange.
-var (
-	Exchange_name = map[int32]string{
-		0: "EXCHANGE_UNSPECIFIED",
-		1: "EXCHANGE_OKX",
-		2: "EXCHANGE_BINANCE",
-	}
-	Exchange_value = map[string]int32{
-		"EXCHANGE_UNSPECIFIED": 0,
-		"EXCHANGE_OKX":         1,
-		"EXCHANGE_BINANCE":     2,
-	}
-)
-
-func (x Exchange) Enum() *Exchange {
-	p := new(Exchange)
-	*p = x
-	return p
-}
-
-func (x Exchange) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (Exchange) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[2].Descriptor()
-}
-
-func (Exchange) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[2]
-}
-
-func (x Exchange) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use Exchange.Descriptor instead.
-func (Exchange) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{2}
-}
-
-// 辨別市場類型（現貨/永續…）
-type MarketType int32
-
-const (
-	MarketType_MARKET_TYPE_UNSPECIFIED MarketType = 0 // 預設值：不使用
-	MarketType_MARKET_SPOT             MarketType = 1 // 現貨
-	MarketType_MARKET_PERPETUAL        MarketType = 2 // 永續合約
-)
-
-// Enum value maps for MarketType.
-var (
-	MarketType_name = map[int32]string{
-		0: "MARKET_TYPE_UNSPECIFIED",
-		1: "MARKET_SPOT",
-		2: "MARKET_PERPETUAL",
-	}
-	MarketType_value = map[string]int32{
-		"MARKET_TYPE_UNSPECIFIED": 0,
-		"MARKET_SPOT":             1,
-		"MARKET_PERPETUAL":        2,
-	}
-)
-
-func (x MarketType) Enum() *MarketType {
-	p := new(MarketType)
-	*p = x
-	return p
-}
-
-func (x MarketType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MarketType) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[3].Descriptor()
-}
-
-func (MarketType) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[3]
-}
-
-func (x MarketType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MarketType.Descriptor instead.
-func (MarketType) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{3}
-}
-
-// 用於辨別books在系統內二次轉傳的方式
+// books 在系統內二次轉傳的方式
 type Action int32
 
 const (
-	Action_ACTION_UNSPECIFIED Action = 0 // 預設值：不使用
+	Action_ACTION_UNSPECIFIED Action = 0 // 預設值，不使用
 	Action_ACTION_SNAPSHOT    Action = 1 // 完整快照
 	Action_ACTION_UPDATE      Action = 2 // 增量更新
-	Action_ACTION_CLEAR       Action = 3 // 丟棄整本books 準備重新更新
+	Action_ACTION_CLEAR       Action = 3 // 丟棄整本 books，準備重新建構
 )
 
 // Enum value maps for Action.
@@ -268,11 +111,11 @@ func (x Action) String() string {
 }
 
 func (Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[4].Descriptor()
+	return file_market_stream_v1_proto_enumTypes[1].Descriptor()
 }
 
 func (Action) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[4]
+	return &file_market_stream_v1_proto_enumTypes[1]
 }
 
 func (x Action) Number() protoreflect.EnumNumber {
@@ -281,328 +124,11 @@ func (x Action) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Action.Descriptor instead.
 func (Action) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{4}
-}
-
-// Source 內部欄位
-type Source struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Exchange      Exchange               `protobuf:"varint,1,opt,name=exchange,proto3,enum=market.stream.v1.Exchange" json:"exchange,omitempty"` // 資料來源交易所
-	Feed          Feed                   `protobuf:"varint,2,opt,name=feed,proto3,enum=market.stream.v1.Feed" json:"feed,omitempty"`             // 資料類型(包含各種交易所不同提供的資料類型）
-	VendorChannel string                 `protobuf:"bytes,3,opt,name=vendor_channel,json=vendorChannel,proto3" json:"vendor_channel,omitempty"`  // 保留原資料channel名稱
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Source) Reset() {
-	*x = Source{}
-	mi := &file_market_stream_v1_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Source) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Source) ProtoMessage() {}
-
-func (x *Source) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Source.ProtoReflect.Descriptor instead.
-func (*Source) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Source) GetExchange() Exchange {
-	if x != nil {
-		return x.Exchange
-	}
-	return Exchange_EXCHANGE_UNSPECIFIED
-}
-
-func (x *Source) GetFeed() Feed {
-	if x != nil {
-		return x.Feed
-	}
-	return Feed_FEED_UNSPECIFIED
-}
-
-func (x *Source) GetVendorChannel() string {
-	if x != nil {
-		return x.VendorChannel
-	}
-	return ""
-}
-
-// Timestamps 內部欄位
-type Timestamps struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	EventTsUs     uint64                 `protobuf:"varint,1,opt,name=event_ts_us,json=eventTsUs,proto3" json:"event_ts_us,omitempty"`             // 交易所回傳ts精度ms 在精煉接端會把ms轉us 大多數交易所預設回傳都是ms (0表未知)
-	CollectRecvUs uint64                 `protobuf:"varint,2,opt,name=collect_recv_us,json=collectRecvUs,proto3" json:"collect_recv_us,omitempty"` // 搜集小組接收到交易所資料回傳的時間戳
-	CollectPubUs  uint64                 `protobuf:"varint,3,opt,name=collect_pub_us,json=collectPubUs,proto3" json:"collect_pub_us,omitempty"`    // 搜集小組推送到下游精煉小組的時間戳
-	RefinerRecvUs uint64                 `protobuf:"varint,4,opt,name=refiner_recv_us,json=refinerRecvUs,proto3" json:"refiner_recv_us,omitempty"` // 精煉小組接收到上游搜集小組資料推送的時間戳
-	RefinerPubUs  uint64                 `protobuf:"varint,5,opt,name=refiner_pub_us,json=refinerPubUs,proto3" json:"refiner_pub_us,omitempty"`    // 精煉小組清洗完資料後推送到外部頻道的時間戳
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Timestamps) Reset() {
-	*x = Timestamps{}
-	mi := &file_market_stream_v1_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Timestamps) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Timestamps) ProtoMessage() {}
-
-func (x *Timestamps) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Timestamps.ProtoReflect.Descriptor instead.
-func (*Timestamps) Descriptor() ([]byte, []int) {
 	return file_market_stream_v1_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Timestamps) GetEventTsUs() uint64 {
-	if x != nil {
-		return x.EventTsUs
-	}
-	return 0
-}
-
-func (x *Timestamps) GetCollectRecvUs() uint64 {
-	if x != nil {
-		return x.CollectRecvUs
-	}
-	return 0
-}
-
-func (x *Timestamps) GetCollectPubUs() uint64 {
-	if x != nil {
-		return x.CollectPubUs
-	}
-	return 0
-}
-
-func (x *Timestamps) GetRefinerRecvUs() uint64 {
-	if x != nil {
-		return x.RefinerRecvUs
-	}
-	return 0
-}
-
-func (x *Timestamps) GetRefinerPubUs() uint64 {
-	if x != nil {
-		return x.RefinerPubUs
-	}
-	return 0
-}
-
-// 共用封包
-type Envelope struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Version    uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                                                          // Envelope 版本號
-	Source     *Source                `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`                                                             // 來源：內含交易所與資料類型兩欄位
-	Symbol     string                 `protobuf:"bytes,3,opt,name=symbol,proto3" json:"symbol,omitempty"`                                                             // 系統內使用的標準化商品代碼
-	MarketType MarketType             `protobuf:"varint,4,opt,name=market_type,json=marketType,proto3,enum=market.stream.v1.MarketType" json:"market_type,omitempty"` // 辨識是哪一種市場類型（現貨/永續…）
-	MessageId  []byte                 `protobuf:"bytes,5,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`                                      // 16 bytes: xxhash128( len(exchange)|exchange | len(feed)|feed | len(body_bytes)|body_bytes )
-	Timestamps *Timestamps            `protobuf:"bytes,6,opt,name=timestamps,proto3" json:"timestamps,omitempty"`                                                     // 各種時間戳用於監控追蹤延遲等等
-	// 共用封包只能夠放一種資料型態格式
-	//
-	// Types that are valid to be assigned to Body:
-	//
-	//	*Envelope_Raw
-	//	*Envelope_Trade
-	//	*Envelope_TradeAll
-	//	*Envelope_Bbo
-	//	*Envelope_Book
-	Body          isEnvelope_Body `protobuf_oneof:"body"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Envelope) Reset() {
-	*x = Envelope{}
-	mi := &file_market_stream_v1_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Envelope) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Envelope) ProtoMessage() {}
-
-func (x *Envelope) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Envelope.ProtoReflect.Descriptor instead.
-func (*Envelope) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *Envelope) GetVersion() uint32 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *Envelope) GetSource() *Source {
-	if x != nil {
-		return x.Source
-	}
-	return nil
-}
-
-func (x *Envelope) GetSymbol() string {
-	if x != nil {
-		return x.Symbol
-	}
-	return ""
-}
-
-func (x *Envelope) GetMarketType() MarketType {
-	if x != nil {
-		return x.MarketType
-	}
-	return MarketType_MARKET_TYPE_UNSPECIFIED
-}
-
-func (x *Envelope) GetMessageId() []byte {
-	if x != nil {
-		return x.MessageId
-	}
-	return nil
-}
-
-func (x *Envelope) GetTimestamps() *Timestamps {
-	if x != nil {
-		return x.Timestamps
-	}
-	return nil
-}
-
-func (x *Envelope) GetBody() isEnvelope_Body {
-	if x != nil {
-		return x.Body
-	}
-	return nil
-}
-
-func (x *Envelope) GetRaw() *RawBody {
-	if x != nil {
-		if x, ok := x.Body.(*Envelope_Raw); ok {
-			return x.Raw
-		}
-	}
-	return nil
-}
-
-func (x *Envelope) GetTrade() *OKXTradeBody {
-	if x != nil {
-		if x, ok := x.Body.(*Envelope_Trade); ok {
-			return x.Trade
-		}
-	}
-	return nil
-}
-
-func (x *Envelope) GetTradeAll() *OKXAllTradeBody {
-	if x != nil {
-		if x, ok := x.Body.(*Envelope_TradeAll); ok {
-			return x.TradeAll
-		}
-	}
-	return nil
-}
-
-func (x *Envelope) GetBbo() *OKXBBOBody {
-	if x != nil {
-		if x, ok := x.Body.(*Envelope_Bbo); ok {
-			return x.Bbo
-		}
-	}
-	return nil
-}
-
-func (x *Envelope) GetBook() *OKXBooksBody {
-	if x != nil {
-		if x, ok := x.Body.(*Envelope_Book); ok {
-			return x.Book
-		}
-	}
-	return nil
-}
-
-type isEnvelope_Body interface {
-	isEnvelope_Body()
-}
-
-type Envelope_Raw struct {
-	Raw *RawBody `protobuf:"bytes,20,opt,name=raw,proto3,oneof"`
-}
-
-type Envelope_Trade struct {
-	Trade *OKXTradeBody `protobuf:"bytes,21,opt,name=trade,proto3,oneof"`
-}
-
-type Envelope_TradeAll struct {
-	TradeAll *OKXAllTradeBody `protobuf:"bytes,22,opt,name=trade_all,json=tradeAll,proto3,oneof"`
-}
-
-type Envelope_Bbo struct {
-	Bbo *OKXBBOBody `protobuf:"bytes,23,opt,name=bbo,proto3,oneof"`
-}
-
-type Envelope_Book struct {
-	Book *OKXBooksBody `protobuf:"bytes,24,opt,name=book,proto3,oneof"`
-}
-
-func (*Envelope_Raw) isEnvelope_Body() {}
-
-func (*Envelope_Trade) isEnvelope_Body() {}
-
-func (*Envelope_TradeAll) isEnvelope_Body() {}
-
-func (*Envelope_Bbo) isEnvelope_Body() {}
-
-func (*Envelope_Book) isEnvelope_Body() {}
-
+// ======================= RawBody =======================
+// 用於存放交易所原始資料（未清洗）
 type RawBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RawData       []byte                 `protobuf:"bytes,1,opt,name=raw_data,json=rawData,proto3" json:"raw_data,omitempty"`
@@ -612,7 +138,7 @@ type RawBody struct {
 
 func (x *RawBody) Reset() {
 	*x = RawBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[3]
+	mi := &file_market_stream_v1_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -624,7 +150,7 @@ func (x *RawBody) String() string {
 func (*RawBody) ProtoMessage() {}
 
 func (x *RawBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[3]
+	mi := &file_market_stream_v1_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -637,7 +163,7 @@ func (x *RawBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RawBody.ProtoReflect.Descriptor instead.
 func (*RawBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{3}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RawBody) GetRawData() []byte {
@@ -647,22 +173,24 @@ func (x *RawBody) GetRawData() []byte {
 	return nil
 }
 
+// ======================= OKXTrade =======================
+// OKX 的成交（聚合後）資料：清洗後欄位定義
 type OKXTradeBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                      // OKXTradeBody 版本號
 	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                // 成交價（e9）
 	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                // 成交量（e9）
 	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"` // BUY/SELL/UNKNOWN
-	Count         uint32                 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`                          // 有幾個maker被這筆taker吃到成交的
-	SeqId         uint64                 `protobuf:"varint,6,opt,name=seqId,proto3" json:"seqId,omitempty"`                          // 交易所提供的 Sequence ID 序列ID 用於判斷是否掉包或是去重
-	TradeId       string                 `protobuf:"bytes,7,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 這筆交易的交易id 可用於後續外部數據對帳二次去重等等
+	Count         uint32                 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`                          // 被該 taker 吃到的 maker 數
+	SeqId         uint64                 `protobuf:"varint,6,opt,name=seqId,proto3" json:"seqId,omitempty"`                          // 來源 Sequence ID（掉包偵測/去重）
+	TradeId       string                 `protobuf:"bytes,7,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 來源交易 ID（對帳/二次去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXTradeBody) Reset() {
 	*x = OKXTradeBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[4]
+	mi := &file_market_stream_v1_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +202,7 @@ func (x *OKXTradeBody) String() string {
 func (*OKXTradeBody) ProtoMessage() {}
 
 func (x *OKXTradeBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[4]
+	mi := &file_market_stream_v1_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +215,7 @@ func (x *OKXTradeBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXTradeBody.ProtoReflect.Descriptor instead.
 func (*OKXTradeBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{4}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *OKXTradeBody) GetVersion() uint32 {
@@ -739,20 +267,23 @@ func (x *OKXTradeBody) GetTradeId() string {
 	return ""
 }
 
+// ======================= OKXAllTrade =======================
+// OKX 的逐筆成交（未聚合）資料：清洗後欄位定義
+// 與 Trade 差異：AllTrades 無 count、無 seqId；每個被 take 的 maker 對應一則訊息
 type OKXAllTradeBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                      // OKXTradeBody 版本號
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                      // OKXAllTradeBody 版本號
 	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                // 成交價（e9）
 	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                // 成交量（e9）
 	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"` // BUY/SELL/UNKNOWN
-	TradeId       string                 `protobuf:"bytes,5,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 這筆交易的交易id 可用於後續外部數據對帳二次去重等等
+	TradeId       string                 `protobuf:"bytes,5,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 來源交易 ID（對帳/二次去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXAllTradeBody) Reset() {
 	*x = OKXAllTradeBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[5]
+	mi := &file_market_stream_v1_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -764,7 +295,7 @@ func (x *OKXAllTradeBody) String() string {
 func (*OKXAllTradeBody) ProtoMessage() {}
 
 func (x *OKXAllTradeBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[5]
+	mi := &file_market_stream_v1_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -777,7 +308,7 @@ func (x *OKXAllTradeBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXAllTradeBody.ProtoReflect.Descriptor instead.
 func (*OKXAllTradeBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{5}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *OKXAllTradeBody) GetVersion() uint32 {
@@ -815,23 +346,25 @@ func (x *OKXAllTradeBody) GetTradeId() string {
 	return ""
 }
 
+// ======================= OKXBBO =======================
+// OKX 的最優買賣（BBO）：清洗後欄位定義
 type OKXBBOBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                                    // OKXBBOBody 版本號
 	BidPxE9       int64                  `protobuf:"varint,2,opt,name=bid_px_e9,json=bidPxE9,proto3" json:"bid_px_e9,omitempty"`                   // 最優買價（e9)
-	BidQtyE9      int64                  `protobuf:"varint,3,opt,name=bid_qty_e9,json=bidQtyE9,proto3" json:"bid_qty_e9,omitempty"`                // 最優買價深度(quantity)(e9)
-	BidOrderCount uint32                 `protobuf:"varint,4,opt,name=bid_order_count,json=bidOrderCount,proto3" json:"bid_order_count,omitempty"` // 最優買價掛單數量
+	BidQtyE9      int64                  `protobuf:"varint,3,opt,name=bid_qty_e9,json=bidQtyE9,proto3" json:"bid_qty_e9,omitempty"`                // 最優買價數量（e9）
+	BidOrderCount uint32                 `protobuf:"varint,4,opt,name=bid_order_count,json=bidOrderCount,proto3" json:"bid_order_count,omitempty"` // 最優買價掛單數
 	AskPxE9       int64                  `protobuf:"varint,5,opt,name=ask_px_e9,json=askPxE9,proto3" json:"ask_px_e9,omitempty"`                   // 最優賣價（e9)
-	AskQtyE9      int64                  `protobuf:"varint,6,opt,name=ask_qty_e9,json=askQtyE9,proto3" json:"ask_qty_e9,omitempty"`                // 最優賣價深度(quantity)(e9)
-	AskOrderCount uint32                 `protobuf:"varint,7,opt,name=ask_order_count,json=askOrderCount,proto3" json:"ask_order_count,omitempty"` // 最優賣價掛單數量
-	SeqId         uint64                 `protobuf:"varint,8,opt,name=seqId,proto3" json:"seqId,omitempty"`                                        // 交易所提供的 Sequence ID 序列ID 用於判斷是否掉包或是去重
+	AskQtyE9      int64                  `protobuf:"varint,6,opt,name=ask_qty_e9,json=askQtyE9,proto3" json:"ask_qty_e9,omitempty"`                // 最優賣價數量（e9）
+	AskOrderCount uint32                 `protobuf:"varint,7,opt,name=ask_order_count,json=askOrderCount,proto3" json:"ask_order_count,omitempty"` // 最優賣價掛單數
+	SeqId         uint64                 `protobuf:"varint,8,opt,name=seqId,proto3" json:"seqId,omitempty"`                                        // 來源 Sequence ID（掉包偵測/去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXBBOBody) Reset() {
 	*x = OKXBBOBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[6]
+	mi := &file_market_stream_v1_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -843,7 +376,7 @@ func (x *OKXBBOBody) String() string {
 func (*OKXBBOBody) ProtoMessage() {}
 
 func (x *OKXBBOBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[6]
+	mi := &file_market_stream_v1_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -856,7 +389,7 @@ func (x *OKXBBOBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBBOBody.ProtoReflect.Descriptor instead.
 func (*OKXBBOBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{6}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *OKXBBOBody) GetVersion() uint32 {
@@ -917,15 +450,15 @@ func (x *OKXBBOBody) GetSeqId() uint64 {
 
 type OKXBookLevel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	PxE9          int64                  `protobuf:"varint,1,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`    // 價位(e9)
-	QtyE9         int64                  `protobuf:"varint,2,opt,name=qty_e9,json=qtyE9,proto3" json:"qty_e9,omitempty"` // 對應價位數量-深度(e9)
+	PxE9          int64                  `protobuf:"varint,1,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`    // 價位（e9）
+	QtyE9         int64                  `protobuf:"varint,2,opt,name=qty_e9,json=qtyE9,proto3" json:"qty_e9,omitempty"` // 對應價位數量（e9）；=0 代表刪除此價位
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXBookLevel) Reset() {
 	*x = OKXBookLevel{}
-	mi := &file_market_stream_v1_proto_msgTypes[7]
+	mi := &file_market_stream_v1_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -937,7 +470,7 @@ func (x *OKXBookLevel) String() string {
 func (*OKXBookLevel) ProtoMessage() {}
 
 func (x *OKXBookLevel) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[7]
+	mi := &file_market_stream_v1_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -950,7 +483,7 @@ func (x *OKXBookLevel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBookLevel.ProtoReflect.Descriptor instead.
 func (*OKXBookLevel) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{7}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *OKXBookLevel) GetPxE9() int64 {
@@ -969,20 +502,20 @@ func (x *OKXBookLevel) GetQtyE9() int64 {
 
 type OKXBooksBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                            // OKXBooksBody版本號
-	Action        Action                 `protobuf:"varint,2,opt,name=action,proto3,enum=market.stream.v1.Action" json:"action,omitempty"` // 去判斷說易於分流 這是完整快照還是增量更新
-	Bids          []*OKXBookLevel        `protobuf:"bytes,3,rep,name=bids,proto3" json:"bids,omitempty"`                                   // bids的刷新 會是一個陣列對應到上面的 刷新 px:qty
-	Asks          []*OKXBookLevel        `protobuf:"bytes,4,rep,name=asks,proto3" json:"asks,omitempty"`                                   // asks的刷新 會是一個陣列對應到上面的 刷新 px:qty
-	Checksum      int32                  `protobuf:"varint,5,opt,name=checksum,proto3" json:"checksum,omitempty"`                          // 交易所提供的一套算法 能夠確保你當前的訂單是最新正確的訂單簿
-	PrevSeqId     int64                  `protobuf:"varint,6,opt,name=prev_seqId,json=prevSeqId,proto3" json:"prev_seqId,omitempty"`       // 訂單簿是採增量快照 所以官方在這邊給了 prev 便於你去判斷有沒有調包
-	SeqId         uint64                 `protobuf:"varint,7,opt,name=seqId,proto3" json:"seqId,omitempty"`                                // 交易所提供的 Sequence ID 序列ID 用於判斷是否掉包或是去重
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                            // OKXBooksBody 版本號
+	Action        Action                 `protobuf:"varint,2,opt,name=action,proto3,enum=market.stream.v1.Action" json:"action,omitempty"` // 完整快照/增量更新/清空
+	Bids          []*OKXBookLevel        `protobuf:"bytes,3,rep,name=bids,proto3" json:"bids,omitempty"`                                   // bids 刷新（陣列：px:qty）
+	Asks          []*OKXBookLevel        `protobuf:"bytes,4,rep,name=asks,proto3" json:"asks,omitempty"`                                   // asks 刷新（陣列：px:qty）
+	Checksum      int32                  `protobuf:"varint,5,opt,name=checksum,proto3" json:"checksum,omitempty"`                          // 交易所校驗值，確保訂單簿一致性
+	PrevSeqId     int64                  `protobuf:"varint,6,opt,name=prev_seqId,json=prevSeqId,proto3" json:"prev_seqId,omitempty"`       // 增量鏈接的上一個 seqId，協助掉包判斷
+	SeqId         uint64                 `protobuf:"varint,7,opt,name=seqId,proto3" json:"seqId,omitempty"`                                // 來源 Sequence ID（掉包偵測/去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXBooksBody) Reset() {
 	*x = OKXBooksBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[8]
+	mi := &file_market_stream_v1_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -994,7 +527,7 @@ func (x *OKXBooksBody) String() string {
 func (*OKXBooksBody) ProtoMessage() {}
 
 func (x *OKXBooksBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[8]
+	mi := &file_market_stream_v1_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1007,7 +540,7 @@ func (x *OKXBooksBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBooksBody.ProtoReflect.Descriptor instead.
 func (*OKXBooksBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{8}
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *OKXBooksBody) GetVersion() uint32 {
@@ -1059,39 +592,161 @@ func (x *OKXBooksBody) GetSeqId() uint64 {
 	return 0
 }
 
+// ======================= OKX Mark Price =======================
+// 來源: channel = "mark-price"
+// 說明: 只承載標記價格。時間用 Envelope.timestamps.event_ts_us（由原 ts ms 轉 us）。
+type OKXMarkPriceBody struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`       // OKXMarkPriceBody 版本號
+	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"` // 標記價格（mark price, e9）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OKXMarkPriceBody) Reset() {
+	*x = OKXMarkPriceBody{}
+	mi := &file_market_stream_v1_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OKXMarkPriceBody) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OKXMarkPriceBody) ProtoMessage() {}
+
+func (x *OKXMarkPriceBody) ProtoReflect() protoreflect.Message {
+	mi := &file_market_stream_v1_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OKXMarkPriceBody.ProtoReflect.Descriptor instead.
+func (*OKXMarkPriceBody) Descriptor() ([]byte, []int) {
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *OKXMarkPriceBody) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *OKXMarkPriceBody) GetPxE9() int64 {
+	if x != nil {
+		return x.PxE9
+	}
+	return 0
+}
+
+// ======================= OKX Index Tickers =======================
+// 來源: channel = "index-tickers"
+// 說明: 承載指數當前價格與 24h 統計。時間用 Envelope.timestamps.event_ts_us。
+type OKXIndexTickersBody struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                        // OKXIndexTickersBody 版本號
+	IdxPxE9       int64                  `protobuf:"varint,2,opt,name=idx_px_e9,json=idxPxE9,proto3" json:"idx_px_e9,omitempty"`       // 最新指數價格（e9）
+	High24HE9     int64                  `protobuf:"varint,3,opt,name=high24h_e9,json=high24hE9,proto3" json:"high24h_e9,omitempty"`   // 過去 24h 最高價（e9）
+	Low24HE9      int64                  `protobuf:"varint,4,opt,name=low24h_e9,json=low24hE9,proto3" json:"low24h_e9,omitempty"`      // 過去 24h 最低價（e9）
+	Open24HE9     int64                  `protobuf:"varint,5,opt,name=open24h_e9,json=open24hE9,proto3" json:"open24h_e9,omitempty"`   // 過去 24h 開盤價（e9）
+	SodUtc0E9     int64                  `protobuf:"varint,6,opt,name=sod_utc0_e9,json=sodUtc0E9,proto3" json:"sod_utc0_e9,omitempty"` // UTC0 開盤價（e9）
+	SodUtc8E9     int64                  `protobuf:"varint,7,opt,name=sod_utc8_e9,json=sodUtc8E9,proto3" json:"sod_utc8_e9,omitempty"` // UTC8 開盤價（e9）
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OKXIndexTickersBody) Reset() {
+	*x = OKXIndexTickersBody{}
+	mi := &file_market_stream_v1_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OKXIndexTickersBody) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OKXIndexTickersBody) ProtoMessage() {}
+
+func (x *OKXIndexTickersBody) ProtoReflect() protoreflect.Message {
+	mi := &file_market_stream_v1_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OKXIndexTickersBody.ProtoReflect.Descriptor instead.
+func (*OKXIndexTickersBody) Descriptor() ([]byte, []int) {
+	return file_market_stream_v1_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *OKXIndexTickersBody) GetVersion() uint32 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetIdxPxE9() int64 {
+	if x != nil {
+		return x.IdxPxE9
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetHigh24HE9() int64 {
+	if x != nil {
+		return x.High24HE9
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetLow24HE9() int64 {
+	if x != nil {
+		return x.Low24HE9
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetOpen24HE9() int64 {
+	if x != nil {
+		return x.Open24HE9
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetSodUtc0E9() int64 {
+	if x != nil {
+		return x.SodUtc0E9
+	}
+	return 0
+}
+
+func (x *OKXIndexTickersBody) GetSodUtc8E9() int64 {
+	if x != nil {
+		return x.SodUtc8E9
+	}
+	return 0
+}
+
 var File_market_stream_v1_proto protoreflect.FileDescriptor
 
 const file_market_stream_v1_proto_rawDesc = "" +
 	"\n" +
-	"\x16market_stream_v1.proto\x12\x10market.stream.v1\"\x93\x01\n" +
-	"\x06Source\x126\n" +
-	"\bexchange\x18\x01 \x01(\x0e2\x1a.market.stream.v1.ExchangeR\bexchange\x12*\n" +
-	"\x04feed\x18\x02 \x01(\x0e2\x16.market.stream.v1.FeedR\x04feed\x12%\n" +
-	"\x0evendor_channel\x18\x03 \x01(\tR\rvendorChannel\"\xc8\x01\n" +
-	"\n" +
-	"Timestamps\x12\x1e\n" +
-	"\vevent_ts_us\x18\x01 \x01(\x04R\teventTsUs\x12&\n" +
-	"\x0fcollect_recv_us\x18\x02 \x01(\x04R\rcollectRecvUs\x12$\n" +
-	"\x0ecollect_pub_us\x18\x03 \x01(\x04R\fcollectPubUs\x12&\n" +
-	"\x0frefiner_recv_us\x18\x04 \x01(\x04R\rrefinerRecvUs\x12$\n" +
-	"\x0erefiner_pub_us\x18\x05 \x01(\x04R\frefinerPubUs\"\xa3\x04\n" +
-	"\bEnvelope\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x120\n" +
-	"\x06source\x18\x02 \x01(\v2\x18.market.stream.v1.SourceR\x06source\x12\x16\n" +
-	"\x06symbol\x18\x03 \x01(\tR\x06symbol\x12=\n" +
-	"\vmarket_type\x18\x04 \x01(\x0e2\x1c.market.stream.v1.MarketTypeR\n" +
-	"marketType\x12\x1d\n" +
-	"\n" +
-	"message_id\x18\x05 \x01(\fR\tmessageId\x12<\n" +
-	"\n" +
-	"timestamps\x18\x06 \x01(\v2\x1c.market.stream.v1.TimestampsR\n" +
-	"timestamps\x12-\n" +
-	"\x03raw\x18\x14 \x01(\v2\x19.market.stream.v1.RawBodyH\x00R\x03raw\x126\n" +
-	"\x05trade\x18\x15 \x01(\v2\x1e.market.stream.v1.OKXTradeBodyH\x00R\x05trade\x12@\n" +
-	"\ttrade_all\x18\x16 \x01(\v2!.market.stream.v1.OKXAllTradeBodyH\x00R\btradeAll\x120\n" +
-	"\x03bbo\x18\x17 \x01(\v2\x1c.market.stream.v1.OKXBBOBodyH\x00R\x03bbo\x124\n" +
-	"\x04book\x18\x18 \x01(\v2\x1e.market.stream.v1.OKXBooksBodyH\x00R\x04bookB\x06\n" +
-	"\x04body\"$\n" +
+	"\x16market_stream_v1.proto\x12\x10market.stream.v1\"$\n" +
 	"\aRawBody\x12\x19\n" +
 	"\braw_data\x18\x01 \x01(\fR\arawData\"\xc4\x01\n" +
 	"\fOKXTradeBody\x12\x18\n" +
@@ -1131,27 +786,25 @@ const file_market_stream_v1_proto_rawDesc = "" +
 	"\bchecksum\x18\x05 \x01(\x05R\bchecksum\x12\x1d\n" +
 	"\n" +
 	"prev_seqId\x18\x06 \x01(\x03R\tprevSeqId\x12\x14\n" +
-	"\x05seqId\x18\a \x01(\x04R\x05seqId*s\n" +
-	"\x04Feed\x12\x14\n" +
-	"\x10FEED_UNSPECIFIED\x10\x00\x12\x14\n" +
-	"\x0fFEED_OKX_TRADES\x10\xe8\a\x12\x12\n" +
-	"\rFEED_OKX_BOOK\x10\xe9\a\x12\x11\n" +
-	"\fFEED_OKX_BBO\x10\xea\a\x12\x18\n" +
-	"\x13FEED_OKX_TRADES_ALL\x10\xeb\a*K\n" +
+	"\x05seqId\x18\a \x01(\x04R\x05seqId\"A\n" +
+	"\x10OKXMarkPriceBody\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12\x13\n" +
+	"\x05px_e9\x18\x02 \x01(\x03R\x04pxE9\"\xe6\x01\n" +
+	"\x13OKXIndexTickersBody\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\rR\aversion\x12\x1a\n" +
+	"\tidx_px_e9\x18\x02 \x01(\x03R\aidxPxE9\x12\x1d\n" +
+	"\n" +
+	"high24h_e9\x18\x03 \x01(\x03R\thigh24hE9\x12\x1b\n" +
+	"\tlow24h_e9\x18\x04 \x01(\x03R\blow24hE9\x12\x1d\n" +
+	"\n" +
+	"open24h_e9\x18\x05 \x01(\x03R\topen24hE9\x12\x1e\n" +
+	"\vsod_utc0_e9\x18\x06 \x01(\x03R\tsodUtc0E9\x12\x1e\n" +
+	"\vsod_utc8_e9\x18\a \x01(\x03R\tsodUtc8E9*K\n" +
 	"\x04Side\x12\x14\n" +
 	"\x10SIDE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bSIDE_BUY\x10\x01\x12\r\n" +
 	"\tSIDE_SELL\x10\x02\x12\x10\n" +
-	"\fSIDE_UNKNOWN\x10\x03*L\n" +
-	"\bExchange\x12\x18\n" +
-	"\x14EXCHANGE_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fEXCHANGE_OKX\x10\x01\x12\x14\n" +
-	"\x10EXCHANGE_BINANCE\x10\x02*P\n" +
-	"\n" +
-	"MarketType\x12\x1b\n" +
-	"\x17MARKET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
-	"\vMARKET_SPOT\x10\x01\x12\x14\n" +
-	"\x10MARKET_PERPETUAL\x10\x02*Z\n" +
+	"\fSIDE_UNKNOWN\x10\x03*Z\n" +
 	"\x06Action\x12\x16\n" +
 	"\x12ACTION_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fACTION_SNAPSHOT\x10\x01\x12\x11\n" +
@@ -1170,45 +823,31 @@ func file_market_stream_v1_proto_rawDescGZIP() []byte {
 	return file_market_stream_v1_proto_rawDescData
 }
 
-var file_market_stream_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_market_stream_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_market_stream_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_market_stream_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_market_stream_v1_proto_goTypes = []any{
-	(Feed)(0),               // 0: market.stream.v1.Feed
-	(Side)(0),               // 1: market.stream.v1.Side
-	(Exchange)(0),           // 2: market.stream.v1.Exchange
-	(MarketType)(0),         // 3: market.stream.v1.MarketType
-	(Action)(0),             // 4: market.stream.v1.Action
-	(*Source)(nil),          // 5: market.stream.v1.Source
-	(*Timestamps)(nil),      // 6: market.stream.v1.Timestamps
-	(*Envelope)(nil),        // 7: market.stream.v1.Envelope
-	(*RawBody)(nil),         // 8: market.stream.v1.RawBody
-	(*OKXTradeBody)(nil),    // 9: market.stream.v1.OKXTradeBody
-	(*OKXAllTradeBody)(nil), // 10: market.stream.v1.OKXAllTradeBody
-	(*OKXBBOBody)(nil),      // 11: market.stream.v1.OKXBBOBody
-	(*OKXBookLevel)(nil),    // 12: market.stream.v1.OKXBookLevel
-	(*OKXBooksBody)(nil),    // 13: market.stream.v1.OKXBooksBody
+	(Side)(0),                   // 0: market.stream.v1.Side
+	(Action)(0),                 // 1: market.stream.v1.Action
+	(*RawBody)(nil),             // 2: market.stream.v1.RawBody
+	(*OKXTradeBody)(nil),        // 3: market.stream.v1.OKXTradeBody
+	(*OKXAllTradeBody)(nil),     // 4: market.stream.v1.OKXAllTradeBody
+	(*OKXBBOBody)(nil),          // 5: market.stream.v1.OKXBBOBody
+	(*OKXBookLevel)(nil),        // 6: market.stream.v1.OKXBookLevel
+	(*OKXBooksBody)(nil),        // 7: market.stream.v1.OKXBooksBody
+	(*OKXMarkPriceBody)(nil),    // 8: market.stream.v1.OKXMarkPriceBody
+	(*OKXIndexTickersBody)(nil), // 9: market.stream.v1.OKXIndexTickersBody
 }
 var file_market_stream_v1_proto_depIdxs = []int32{
-	2,  // 0: market.stream.v1.Source.exchange:type_name -> market.stream.v1.Exchange
-	0,  // 1: market.stream.v1.Source.feed:type_name -> market.stream.v1.Feed
-	5,  // 2: market.stream.v1.Envelope.source:type_name -> market.stream.v1.Source
-	3,  // 3: market.stream.v1.Envelope.market_type:type_name -> market.stream.v1.MarketType
-	6,  // 4: market.stream.v1.Envelope.timestamps:type_name -> market.stream.v1.Timestamps
-	8,  // 5: market.stream.v1.Envelope.raw:type_name -> market.stream.v1.RawBody
-	9,  // 6: market.stream.v1.Envelope.trade:type_name -> market.stream.v1.OKXTradeBody
-	10, // 7: market.stream.v1.Envelope.trade_all:type_name -> market.stream.v1.OKXAllTradeBody
-	11, // 8: market.stream.v1.Envelope.bbo:type_name -> market.stream.v1.OKXBBOBody
-	13, // 9: market.stream.v1.Envelope.book:type_name -> market.stream.v1.OKXBooksBody
-	1,  // 10: market.stream.v1.OKXTradeBody.side:type_name -> market.stream.v1.Side
-	1,  // 11: market.stream.v1.OKXAllTradeBody.side:type_name -> market.stream.v1.Side
-	4,  // 12: market.stream.v1.OKXBooksBody.action:type_name -> market.stream.v1.Action
-	12, // 13: market.stream.v1.OKXBooksBody.bids:type_name -> market.stream.v1.OKXBookLevel
-	12, // 14: market.stream.v1.OKXBooksBody.asks:type_name -> market.stream.v1.OKXBookLevel
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	0, // 0: market.stream.v1.OKXTradeBody.side:type_name -> market.stream.v1.Side
+	0, // 1: market.stream.v1.OKXAllTradeBody.side:type_name -> market.stream.v1.Side
+	1, // 2: market.stream.v1.OKXBooksBody.action:type_name -> market.stream.v1.Action
+	6, // 3: market.stream.v1.OKXBooksBody.bids:type_name -> market.stream.v1.OKXBookLevel
+	6, // 4: market.stream.v1.OKXBooksBody.asks:type_name -> market.stream.v1.OKXBookLevel
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_market_stream_v1_proto_init() }
@@ -1216,20 +855,13 @@ func file_market_stream_v1_proto_init() {
 	if File_market_stream_v1_proto != nil {
 		return
 	}
-	file_market_stream_v1_proto_msgTypes[2].OneofWrappers = []any{
-		(*Envelope_Raw)(nil),
-		(*Envelope_Trade)(nil),
-		(*Envelope_TradeAll)(nil),
-		(*Envelope_Bbo)(nil),
-		(*Envelope_Book)(nil),
-	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_stream_v1_proto_rawDesc), len(file_market_stream_v1_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   9,
+			NumEnums:      2,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

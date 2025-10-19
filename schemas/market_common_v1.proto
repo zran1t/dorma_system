@@ -1,0 +1,70 @@
+﻿syntax = "proto3";
+
+package market.common.v1;
+
+option optimize_for = SPEED;
+option go_package = "dorma_system/schemas/go/market_common_v1;marketcommonv1";
+
+import "google/protobuf/any.proto";
+
+// =======================================================
+// 風格與單位約定
+//
+// • 時間單位：除特別說明外，_us = microseconds。交易通常 ms，會在精煉端轉為 us；0 表未知。
+// • 金額/數量以 e9 表示小數（例如 1.23 表示為 1230000000）。欄位名 *_e9 皆採此約定。
+// • enum 的 *_UNSPECIFIED 為預設值（不使用）；僅表占位/未知狀態，不應出現在正常流程。
+// • seqId ID 由交易所提供，用於偵測掉包與去重
+// • Trade ID 由交易所提供，可用於二次去重與外部對帳
+// =======================================================
+
+
+// ======================= Enums =======================
+
+// 資料來源交易所
+enum Exchange {
+  EXCHANGE_UNSPECIFIED = 0; // 預設值，不使用
+  EXCHANGE_OKX         = 1; // 歐易(OKX)
+  EXCHANGE_BINANCE     = 2; // 幣安(Binance)
+}
+
+// 市場類型（現貨/永續…）
+enum MarketType { 
+  MARKET_TYPE_UNSPECIFIED = 0; // 預設值，不使用
+  MARKET_SPOT             = 1; // 現貨
+  MARKET_PERPETUAL        = 2; // 永續合約
+  MARKET_INDEX            = 3; // 指數（不可交易，用於定價/標記/風控）
+}
+
+
+// ======================= Envelope =======================
+// 共用外層封包
+
+// 來源
+message Source {
+  Exchange  exchange       = 1; // 交易所
+  string    feed           = 2; // 資料型態（依來源定義）
+  string    vendor_channel = 3; // 原始 channel 名稱（保留）
+  string    interval       = 4; // 時間框架，如 "1m"、"1H"、"1D"；非 KLine 留空
+}
+
+// 多個時間戳（用於延遲監控與追蹤）
+message Timestamps {
+  uint64  event_ts_us      = 1; // 來源事件時間（交易所送出的 timestamp）
+  uint64  collect_recv_us  = 2; // 搜集組收到來源資料時間
+  uint64  collect_pub_us   = 3; // 搜集組推送到精煉組時間
+  uint64  refiner_recv_us  = 4; // 精煉組收到資料時間
+  uint64  refiner_pub_us   = 5; // 精煉組清洗後推送到外部頻道時間
+}
+
+// 外層封包：僅承載一種資料型態
+message Envelope {
+  uint32        version     = 1; // Envelope 版本號
+  Source        source      = 2; // 來源資訊
+  string        symbol      = 3; // 系統內標準化商品代碼
+  MarketType    market_type = 4; // 市場類型（現貨/永續…）
+  bytes         message_id  = 5; // 16 bytes: xxhash128(len(exchange)|exchange|len(feed)|feed|len(body_bytes)|body_bytes)
+  Timestamps    timestamps  = 6; // 各節點時間戳
+
+  // 只能放一種 body（不同型態擇一）；使用 google.protobuf.Any 承載
+  google.protobuf.Any body = 20;
+}

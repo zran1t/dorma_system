@@ -232,3 +232,14 @@ source .venv/bin/activate
   --go_out=paths=source_relative:schemas/gen/go/market_stream_v1 \
   --go-grpc_out=paths=source_relative:schemas/gen/go/market_stream_v1 \
   schemas/market_stream_v1.proto
+
+
+  protoc -I schemas \
+  --go_out=paths=source_relative:schemas/gen/go/market_common_v1 \
+  --go-grpc_out=paths=source_relative:schemas/gen/go/market_common_v1 \
+  schemas/market_common_v1.proto
+
+  protoc -I schemas \
+  --go_out=paths=source_relative:schemas/gen/go/market_kline_v1 \
+  --go-grpc_out=paths=source_relative:schemas/gen/go/market_kline_v1 \
+  schemas/market_kline_v1.proto

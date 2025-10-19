@@ -27,7 +27,7 @@ func NewChief(nc *nats.Conn, throttle time.Duration) *Chief {
 }
 
 func (c *Chief) Start() error {
-	sub, err := c.nc.Subscribe(subjDelta, func(m *nats.Msg) {
+	sub, err := c.nc.Subscribe(subjDeltaWildcard, func(m *nats.Msg) {
 		if err := c.handleDelta(m); err != nil {
 			c.logf("[book_group] handleDelta error: %v", err)
 		}
@@ -36,7 +36,7 @@ func (c *Chief) Start() error {
 		return err
 	}
 	c.sub = sub
-	c.logf("book_group started: delta=%s full=%s", subjDelta, subjFull)
+	c.logf("book_group started: delta=%s full=CLEAN.OKX.BOOK.FULL.<BASE>.<QUOTE>.<SUF>", subjDeltaWildcard)
 	return nil
 }
 

@@ -1,0 +1,102 @@
+// =======================================================
+// market_kline_v1.proto
+//
+// 說明：低頻（LF）K線資料協議，對應 OKX 的
+//       - mark-price-candle*（標記價K線）
+//       - index-candle*（指數價K線）
+//
+// 風格與單位約定：
+// • 時間：除特別標示外，_us = microseconds；OKX 原始 ts 為毫秒(ms)，精煉端需轉成 us。
+// • 金額/數量：一律使用 e9（例：1.23 → 1230000000）。
+// • confirmed：OKX 以 "0"/"1" 表示未完成/完成；本協議以 bool confirmed 呈現。
+// • 批次支援：為了初始化/回放可一次攜帶多根 bar；即時流常見為單根。
+// • 市場/交易對：外層共用 Envelope.symbol = canonical（例：BTC-USDT-SWAP / BTC-USDT-INDEX）。
+// • feed（Envelope.source.feed）：建議使用 "KLINE.MARKPRICE" 與 "KLINE.INDEX" 作為類型標識。
+// =======================================================
+
+syntax = "proto3";
+
+package market.kline.v1;
+
+option optimize_for = SPEED;
+option go_package = "dorma_system/schemas/go/market_kline_v1;marketklinev1";
+
+// ======================= 共用型別 =======================
+
+// 時間框架字串，統一使用短碼：
+//  - 分鐘：1m,3m,5m,15m,30m
+//  - 小時：1H,2H,4H,6H,12H
+//  - 日/週/月/季/年：1D,2D,3D,5D,1W,1M,3M,1Y
+//  - OKX 亦有 *utc 後綴（例：1Dutc,1Wutc,1Mutc,3Mutc,1Yutc）→ 原樣保留於 interval。
+//
+// 註：不做 enum，避免與各交易所變體/未來新增衝突；由精煉端提供標準化字串。
+message KLineBar {
+  uint64 open_ts_us = 1;   // 該根K線的開盤時間（us，從 1970-01-01 起）
+  string interval    = 2;  // 時間框架（例："1m","1D","1Dutc"...）
+
+  // OHLC 皆為 e9；OKX 的 mark/index candle 不提供成交量，volume_e9 可為 0
+  int64 open_e9  = 3;  // 開盤價（e9）
+  int64 high_e9  = 4;  // 最高價（e9）
+  int64 low_e9   = 5;  // 最低價（e9）
+  int64 close_e9 = 6;  // 收盤價（e9）
+  int64 volume_e9 = 7; // 成交量/數量（e9；無此概念時 = 0）
+
+  bool  confirmed   = 8;  // 該根是否已收定（OKX confirm=="1" → true；"0" → false）
+
+  // 供除錯/追蹤（可選）：來源原始時間（us）。若無，保持 0。
+  uint64 vendor_ts_us = 20;
+}
+
+// ======================= OKX：標記價 K 線 =======================
+//
+// 來源：/ws/v5/business，channel=mark-price-candle*
+//
+// 外層 Envelope 約定：
+//   - Envelope.source.exchange = EXCHANGE_OKX
+//   - Envelope.source.feed     = "KLINE.MARKPRICE"
+//   - Envelope.symbol          = canonical（例：BTC-USDT-SWAP）
+//   - Envelope.timestamps.event_ts_us = 來源事件時間（通常為 bar open ts → 轉 us）
+message OKXMarkPriceKLineBody {
+  uint32        version = 1;    // 版本號（保留擴展）
+  repeated KLineBar bars = 2;   // 支援單根或批次（初始化/回放）
+}
+
+// ======================= OKX：指數價 K 線 =======================
+//
+// 來源：/ws/v5/business，channel=index-candle*
+//
+// 外層 Envelope 約定：
+//   - Envelope.source.exchange = EXCHANGE_OKX
+//   - Envelope.source.feed     = "KLINE.INDEX"
+//   - Envelope.symbol          = canonical（例：BTC-USDT-INDEX）
+//   - Envelope.timestamps.event_ts_us = 來源事件時間（通常為 bar open ts → 轉 us）
+message OKXIndexKLineBody {
+  uint32        version = 1;    // 版本號（保留擴展）
+  repeated KLineBar bars = 2;   // 支援單根或批次（初始化/回放）
+}
+
+// ======================= 備註與實作建議 =======================
+//
+// 1) 精煉端（Refiner）轉換：
+//    - 將 OKX data row: [ts,o,h,l,c,confirm] 轉換為單一 KLineBar：
+//        open_ts_us   = parseInt(ts)*1000
+//        open/high/low/close → 以 dec → e9（不四捨五入，截斷至 9 位）
+//        confirmed    = (confirm == "1")
+//        interval     = 由訂閱 channel 推導（例："mark-price-candle1m" → "1m"）
+//        volume_e9    = 0（OKX 標記價/指數價無量）
+//
+// 2) 發佈建議 subject（供參考）：
+//    - CLEAN.OKX.KLINE.MARKPRICE.<BASE>.<QUOTE>.<SUF>.<INTERVAL>
+//      例：CLEAN.OKX.KLINE.MARKPRICE.1m.BTC.USDT.SWAP
+//    - CLEAN.OKX.KLINE.INDEX.<BASE>.<QUOTE>.INDEX.
+//      例：CLEAN.OKX.KLINE.INDEX.1D.BTC.USDT.INDEX
+//
+// 3) 去重與一致性：
+//    - K 線以 (symbol, interval, open_ts_us) 作為自然鍵；confirmed=true 代表落定。
+//    - 即時流通常一次一根；初始化/回放可批次傳多根（bars>1）。
+//
+// 4) Redis 寫入（狀態部門建議）：
+//    - key = LF:{EX}:{FEED}:{INTERVAL}:{SYMBOL}
+//    - score = open_ts_ms（或 us）；value = KLineBar（或僅儲存必要欄位）
+//    - 另維護 LF_LAST:{EX}:{FEED}:{INTERVAL} 的最新一根（HSET）
+//    - 寫成功後發事件（EVENT.LF.{EX}.{FEED}.{INTERVAL}）提醒下游拉取。

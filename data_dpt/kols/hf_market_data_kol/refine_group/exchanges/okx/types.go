@@ -68,3 +68,35 @@ type okxBookHead struct {
 		SeqID     uint64    `json:"seqId"`
 	} `json:"data"`
 }
+
+
+// ---- head structs（比照你現有 head 結構的風格）----
+type okxMarkPriceHead struct {
+    Arg struct {
+        Channel string `json:"channel"`
+        InstID  string `json:"instId"`
+    } `json:"arg"`
+    Data []struct {
+        InstType string `json:"instType"`
+        InstID   string `json:"instId"`
+        MarkPx   string `json:"markPx"`
+        TS       string `json:"ts"`
+    } `json:"data"`
+}
+
+type okxIndexTickersHead struct {
+    Arg struct {
+        Channel string `json:"channel"`
+        InstID  string `json:"instId"`
+    } `json:"arg"`
+    Data []struct {
+        InstID  string `json:"instId"`
+        IdxPx   string `json:"idxPx"`
+        High24h string `json:"high24h"`
+        Low24h  string `json:"low24h"`
+        Open24h string `json:"open24h"`
+        SodUtc0 string `json:"sodUtc0"`
+        SodUtc8 string `json:"sodUtc8"`
+        TS      string `json:"ts"`
+    } `json:"data"`
+}

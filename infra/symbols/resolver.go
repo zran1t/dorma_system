@@ -23,6 +23,7 @@ import (
 type perExchangeYAML struct {
 	Spot map[string]string `yaml:"spot"`
 	Perp map[string]string `yaml:"perp"`
+	Index map[string]string `yaml:"index"`
 }
 
 // 所有交易所 mapping 的預設儲存路徑
@@ -47,24 +48,29 @@ func ConfigureYAMLPaths(m map[string]string) {
 }
 
 func (r *InMemoryResolver) LoadYAMLPerExchange(exchange string, b []byte) error {
-	ex := strings.ToLower(strings.TrimSpace(exchange))
-	var cfg perExchangeYAML
-	if err := yaml.Unmarshal(b, &cfg); err != nil {
-		return err
-	}
-	for canon, native := range cfg.Spot {
-		if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SPOT") {
-			return fmt.Errorf("yaml mismatch: %s not suffixed with -SPOT", canon)
-		}
-		r.Register(canon, ex, native)
-	}
-	for canon, native := range cfg.Perp {
-		if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SWAP") {
-			return fmt.Errorf("yaml mismatch: %s not suffixed with -SWAP", canon)
-		}
-		r.Register(canon, ex, native)
-	}
-	return nil
+    ex := strings.ToLower(strings.TrimSpace(exchange))
+    var cfg perExchangeYAML
+    if err := yaml.Unmarshal(b, &cfg); err != nil { return err }
+
+    for canon, native := range cfg.Spot {
+        if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SPOT") {
+            return fmt.Errorf("yaml mismatch: %s not suffixed with -SPOT", canon)
+        }
+        r.Register(canon, ex, native)
+    }
+    for canon, native := range cfg.Perp {
+        if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SWAP") {
+            return fmt.Errorf("yaml mismatch: %s not suffixed with -SWAP", canon)
+        }
+        r.Register(canon, ex, native)
+    }
+    for canon, native := range cfg.Index {
+        if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-INDEX") {
+            return fmt.Errorf("yaml mismatch: %s not suffixed with -INDEX", canon)
+        }
+        r.Register(canon, ex, native)
+    }
+    return nil
 }
 
 func (r *InMemoryResolver) LoadYAMLPerExchangeBatch(files map[string][]byte) error {
@@ -112,7 +118,8 @@ type MarketType string
 const (
 	MarketSPOT MarketType = "SPOT"
 	MarketSWAP MarketType = "SWAP"
-)
+	MarketINDEX MarketType = "INDEX"
+)	
 
 type Canonical struct {
 	Base       string
@@ -121,20 +128,24 @@ type Canonical struct {
 }
 
 func ParseCanonical(s string) (Canonical, error) {
-	parts := strings.Split(strings.TrimSpace(s), "-")
-	if len(parts) != 3 {
-		return Canonical{}, fmt.Errorf("無效的標的物代碼: %q", s)
-	}
-	base, quote, t := strings.ToUpper(parts[0]), strings.ToUpper(parts[1]), strings.ToUpper(parts[2])
-	if quote != "USDT" {
-		return Canonical{}, fmt.Errorf("結餘貨幣必須為USDT (偵測到 %s)", quote)
-	}
-	switch MarketType(t) {
-	case MarketSPOT, MarketSWAP:
-	default:
-		return Canonical{}, fmt.Errorf("無效的市場類型: %s", t)
-	}
-	return Canonical{Base: base, Quote: quote, MarketType: MarketType(t)}, nil
+    parts := strings.Split(strings.TrimSpace(s), "-")
+    if len(parts) != 3 {
+        return Canonical{}, fmt.Errorf("無效的標的物代碼: %q", s)
+    }
+    base, quote, t := strings.ToUpper(parts[0]), strings.ToUpper(parts[1]), strings.ToUpper(parts[2])
+
+    mt := MarketType(t)
+    switch mt {
+    case MarketSPOT, MarketSWAP, MarketINDEX:
+    default:
+        return Canonical{}, fmt.Errorf("無效的市場類型: %s", t)
+    }
+
+    // 你原本強制 quote=USDT；INDEX 可能是 USD/USDT/BTC/USDC
+    if mt != MarketINDEX && quote != "USDT" {
+        return Canonical{}, fmt.Errorf("結餘貨幣必須為USDT (偵測到 %s)", quote)
+    }
+    return Canonical{Base: base, Quote: quote, MarketType: mt}, nil
 }
 
 // 反查器介面：加入 ReverseResolve（native -> canonical）
@@ -239,15 +250,21 @@ func (r *InMemoryResolver) ReverseResolve(exchange, native string) (string, erro
 
 // 小工具：預設 native 生成
 func DefaultNative(exchange string, canon Canonical) string {
-	switch strings.ToLower(exchange) {
-	case "okx":
-		// 你若想 OKX SWAP 也不加 -SWAP，就把 SWAP 的 return 改成一樣
-		return fmt.Sprintf("%s-%s", canon.Base, canon.Quote)
-	case "binance":
-		return strings.ToLower(canon.Base + canon.Quote)
-	default:
-		return strings.ToUpper(canon.Base + canon.Quote)
-	}
+    switch strings.ToLower(exchange) {
+    case "okx":
+        switch canon.MarketType {
+        case MarketSPOT, MarketINDEX:
+            return fmt.Sprintf("%s-%s", canon.Base, canon.Quote) // e.g. BTC-USDT
+        case MarketSWAP:
+            return fmt.Sprintf("%s-%s-SWAP", canon.Base, canon.Quote) // e.g. BTC-USDT-SWAP
+        default:
+            return fmt.Sprintf("%s-%s", canon.Base, canon.Quote)
+        }
+    case "binance":
+        return strings.ToLower(canon.Base + canon.Quote)
+    default:
+        return strings.ToUpper(canon.Base + canon.Quote)
+    }
 }
 
 func (r *InMemoryResolver) UpsertDefaultRow(canonical string, exchanges ...string) error {

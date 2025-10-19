@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto3";             
 
 package market.stream.v1;
 
@@ -11,46 +11,21 @@ option go_package = "dorma_system/schemas/go/market_stream_v1;marketstreamv1";
 // • 時間單位：除特別說明外，_us = microseconds。交易通常 ms，會在精煉端轉為 us；0 表未知。
 // • 金額/數量以 e9 表示小數（例如 1.23 表示為 1230000000）。欄位名 *_e9 皆採此約定。
 // • enum 的 *_UNSPECIFIED 為預設值（不使用）；僅表占位/未知狀態，不應出現在正常流程。
-// • seqId ID 由交易所提供，用於偵測掉包與去重
 // • Trade ID 由交易所提供，可用於二次去重與外部對帳
+// • seqId ID 由交易所提供，用於偵測掉包與去重
 // =======================================================
 
 
 // ======================= Enums =======================
 
-// 各種資料型態
-enum Feed { 
-  FEED_UNSPECIFIED = 0; 
-
-  // OKX(1000~1999)
-  FEED_OKX_TRADES      = 1000; 
-  FEED_OKX_BOOK        = 1001;
-  FEED_OKX_BBO         = 1002;
-  FEED_OKX_TRADES_ALL  = 1003;
-
-  // Binance(2000~2999)
-}
 
 // 方向（買或賣）
-enum Side {
+enum Side {  
   SIDE_UNSPECIFIED = 0; // 預設值，不使用
   SIDE_BUY         = 1; // 買入
   SIDE_SELL        = 2; // 賣出
   SIDE_UNKNOWN     = 3; // 未知（來源未提供或無法判定）
-}
 
-// 資料來源交易所
-enum Exchange {
-  EXCHANGE_UNSPECIFIED = 0; // 預設值，不使用
-  EXCHANGE_OKX         = 1; // 歐易(OKX)
-  EXCHANGE_BINANCE     = 2; // 幣安(Binance)
-}
-
-// 市場類型（現貨/永續…）
-enum MarketType { 
-  MARKET_TYPE_UNSPECIFIED = 0; // 預設值，不使用
-  MARKET_SPOT             = 1; // 現貨
-  MARKET_PERPETUAL        = 2; // 永續合約
 }
 
 // books 在系統內二次轉傳的方式
@@ -62,53 +37,11 @@ enum Action {
 }
 
 
-
-// ======================= Envelope =======================
-// 共用外層封包
-
-// 來源
-message Source {
-  Exchange  exchange       = 1; // 交易所
-  Feed      feed           = 2; // 資料型態（依來源定義）
-  string    vendor_channel = 3; // 原始 channel 名稱（保留）
-}
-
-// 多個時間戳（用於延遲監控與追蹤）
-message Timestamps {
-  uint64  event_ts_us      = 1; // 來源事件時間（交易所送出的 timestamp）
-  uint64  collect_recv_us  = 2; // 搜集組收到來源資料時間
-  uint64  collect_pub_us   = 3; // 搜集組推送到精煉組時間
-  uint64  refiner_recv_us  = 4; // 精煉組收到資料時間
-  uint64  refiner_pub_us   = 5; // 精煉組清洗後推送到外部頻道時間
-}
-
-// 外層封包：僅承載一種資料型態
-message Envelope {
-  uint32        version     = 1; // Envelope 版本號
-  Source        source      = 2; // 來源資訊
-  string        symbol      = 3; // 系統內標準化商品代碼
-  MarketType    market_type = 4; // 市場類型（現貨/永續…）
-  bytes         message_id  = 5; // 16 bytes: xxhash128(len(exchange)|exchange|len(feed)|feed|len(body_bytes)|body_bytes)
-  Timestamps    timestamps  = 6; // 各節點時間戳
-
-  // 只能放一種 body（不同型態擇一）
-  oneof body { 
-    RawBody         raw       = 20; 
-    OKXTradeBody    trade     = 21;
-    OKXAllTradeBody trade_all = 22;
-    OKXBBOBody      bbo       = 23;
-    OKXBooksBody    book      = 24;
-  }
-}
-
-
-
 // ======================= RawBody =======================
 // 用於存放交易所原始資料（未清洗）
 message RawBody {
   bytes raw_data = 1;
 }
-
 
 
 // ======================= OKXTrade =======================
@@ -137,7 +70,6 @@ message OKXAllTradeBody {
 }
 
 
-
 // ======================= OKXBBO =======================
 // OKX 的最優買賣（BBO）：清洗後欄位定義
 message OKXBBOBody {
@@ -150,8 +82,6 @@ message OKXBBOBody {
   uint32    ask_order_count  = 7; // 最優賣價掛單數
   uint64    seqId            = 8; // 來源 Sequence ID（掉包偵測/去重）
 }
-
-
 
 // ======================= Order Book =======================
 
@@ -168,4 +98,25 @@ message OKXBooksBody {
   int32                 checksum   = 5; // 交易所校驗值，確保訂單簿一致性
   int64                 prev_seqId = 6; // 增量鏈接的上一個 seqId，協助掉包判斷
   uint64                seqId      = 7; // 來源 Sequence ID（掉包偵測/去重）
+}
+
+// ======================= OKX Mark Price =======================
+// 來源: channel = "mark-price"
+// 說明: 只承載標記價格。時間用 Envelope.timestamps.event_ts_us（由原 ts ms 轉 us）。
+message OKXMarkPriceBody {
+  uint32 version = 1;  // OKXMarkPriceBody 版本號
+  int64  px_e9   = 2;  // 標記價格（mark price, e9）
+}
+
+// ======================= OKX Index Tickers =======================
+// 來源: channel = "index-tickers"
+// 說明: 承載指數當前價格與 24h 統計。時間用 Envelope.timestamps.event_ts_us。
+message OKXIndexTickersBody {
+  uint32 version      = 1; // OKXIndexTickersBody 版本號
+  int64  idx_px_e9    = 2; // 最新指數價格（e9）
+  int64  high24h_e9   = 3; // 過去 24h 最高價（e9）
+  int64  low24h_e9    = 4; // 過去 24h 最低價（e9）
+  int64  open24h_e9   = 5; // 過去 24h 開盤價（e9）
+  int64  sod_utc0_e9  = 6; // UTC0 開盤價（e9）
+  int64  sod_utc8_e9  = 7; // UTC8 開盤價（e9）
 }

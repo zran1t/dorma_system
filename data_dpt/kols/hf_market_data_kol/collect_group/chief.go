@@ -61,6 +61,18 @@ func (c *Chief) Start(ctx context.Context, exchange, feed string, canon []string
 	default:
 		return fmt.Errorf("unsupported exchange: %s", exchange)
 	}
+	
+	// 如果是 index-tickers feed，將所有 symbol 從 -SWAP / -SPOT 轉成 -INDEX
+	if strings.EqualFold(fd, "index-tickers") {
+		indexCanon := make([]string, 0, len(canon))
+		for _, c := range canon {
+			parts := strings.Split(strings.TrimSpace(c), "-")
+			if len(parts) >= 2 {
+				indexCanon = append(indexCanon, strings.ToUpper(parts[0]+"-"+parts[1]+"-INDEX"))
+			}
+		}
+		canon = indexCanon
+	}
 
 	// 2) 在 Chief 內部反查：canonical -> native
 	exSymbols, err := c.resolver.ResolveMany(canon, ex)

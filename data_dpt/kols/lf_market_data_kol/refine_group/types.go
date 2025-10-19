@@ -1,3 +1,4 @@
+// data_dpt/kols/lf_market_data_kol/refine_group/types.go
 package refine_group
 
 import (
@@ -12,7 +13,6 @@ type Out struct {
 }
 
 // Handler：把 RAW Envelope 轉成「一或多筆」輸出
-// 之後你要把 BOOK 拆成 FULL / DELTA 兩條 subject，也只要回傳兩種 Out 即可。
 type Handler func(
 	env *marketcommonv1.Envelope,
 	resolver symbols.Resolver,
@@ -20,10 +20,8 @@ type Handler func(
 
 // ExchangeAdapter：一個交易所的所有 feed handlers
 type ExchangeAdapter interface {
-	// 交易所（共用列舉，放在 common）
 	Exchange() marketcommonv1.Exchange
-	// feed 改為 string，避免 enum 爆炸；key 建議使用來源原生的 feed 名稱
-	Handlers() map[string]Handler
+	Handlers() map[string]Handler // feed 名 → handler
 }
 
 // Registrar：註冊 adapter

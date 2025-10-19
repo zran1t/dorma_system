@@ -1,3 +1,4 @@
+// data_dpt/kols/lf_market_data_kol/refine_group/refiner.go
 package refine_group
 
 import (
@@ -11,8 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	marketstreamv1 "dorma_system/schemas/gen/go/market_stream_v1"
 	marketcommonv1 "dorma_system/schemas/gen/go/market_common_v1"
+	marketstreamv1 "dorma_system/schemas/gen/go/market_stream_v1"
+	marketklinev1 "dorma_system/schemas/gen/go/market_kline_v1"
 	"dorma_system/infra/symbols"
 )
 
@@ -21,19 +23,17 @@ import (
 type Refiner struct {
 	nc       *nats.Conn
 	resolver symbols.Resolver
-	// handlers: 以共用列舉 Exchange 為第一層 key，feed 為 string（避免 enum 爆炸）
+
 	handlers map[marketcommonv1.Exchange]map[string]Handler
 
-	// 去重狀態（放 engine，不汙染 adapter）
 	mu       sync.Mutex
 	state    map[string]*dedupState // key = ex|feed|symbol
-	ttl      time.Duration          // 記憶多久
-	capacity int                    // 每個 key 最多記 N 筆
+	ttl      time.Duration
+	capacity int
 }
 
 type RefinerOption func(*Refiner)
 
-// WithDedup 調整去重 TTL 與容量
 func WithDedup(ttl time.Duration, capacity int) RefinerOption {
 	return func(r *Refiner) {
 		if ttl > 0 {
@@ -71,17 +71,16 @@ func (r *Refiner) RegisterAdapter(ad ExchangeAdapter) {
 	}
 }
 
-// Run：訂閱並阻塞到 ctx 結束
 func (r *Refiner) Run(ctx context.Context, subjects ...string) error {
 	if len(subjects) == 0 {
-		log.Println("[refiner] 未提供主題; 無法訂閱")
+		log.Println("[lf/refiner] 未提供主題; 無法訂閱")
 		<-ctx.Done()
 		return ctx.Err()
 	}
 	for _, subj := range subjects {
 		if _, err := r.nc.Subscribe(subj, func(m *nats.Msg) {
 			if err := r.handleMsg(m); err != nil {
-				log.Printf("[refiner] subj=%s err=%v", m.Subject, err)
+				log.Printf("[lf/refiner] subj=%s err=%v", m.Subject, err)
 			}
 		}); err != nil {
 			return err
@@ -99,7 +98,6 @@ type dedupState struct {
 	idSeen  map[string]int64 // tradeId -> lastSeen(sec)
 }
 
-// 確保 key 有狀態
 func (r *Refiner) bucket(key string) *dedupState {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -114,7 +112,6 @@ func (r *Refiner) bucket(key string) *dedupState {
 	return b
 }
 
-// 泛型修剪，避免 map[any]int64 帶來的型別不相容
 func trimMap[K comparable](m map[K]int64, capacity int) {
 	if len(m) <= capacity {
 		return
@@ -128,11 +125,8 @@ func trimMap[K comparable](m map[K]int64, capacity int) {
 	}
 }
 
-// 清理過期或超過容量的紀錄（簡單版：逐步淘汰）
 func (r *Refiner) gcBucket(b *dedupState, nowSec int64) {
 	expireAt := nowSec - int64(r.ttl.Seconds())
-
-	// TTL 清理
 	for s, t := range b.seqSeen {
 		if t < expireAt {
 			delete(b.seqSeen, s)
@@ -143,42 +137,28 @@ func (r *Refiner) gcBucket(b *dedupState, nowSec int64) {
 			delete(b.idSeen, id)
 		}
 	}
-
-	// 容量控制（粗略）：若超過 cap，刪到接近 cap/2
 	trimMap(b.seqSeen, r.capacity)
 	trimMap(b.idSeen, r.capacity)
 }
 
-// shouldPass：依規則判斷是否放行，並記錄
-// 規則：
-// 1) 若有 seqId：以 seqId 去重（看過就丟）
-// 2) 若有 tradeId：再以 tradeId 去重（看過就丟）
-// 3) 若兩者皆有，兩層都檢（任一命中即丟）
-// 4) 若兩者皆無，直接放行（不記錄）
 func (r *Refiner) shouldPass(key string, seqId uint64, tradeId string, nowSec int64) bool {
 	b := r.bucket(key)
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// 先做 GC
 	r.gcBucket(b, nowSec)
 
-	// seqId 檢查
 	if seqId != 0 {
 		if _, ok := b.seqSeen[seqId]; ok {
 			return false
 		}
 	}
-
-	// tradeId 檢查
 	if tradeId != "" {
 		if _, ok := b.idSeen[tradeId]; ok {
 			return false
 		}
 	}
-
-	// 記錄（兩者有就都記）
 	if seqId != 0 {
 		b.seqSeen[seqId] = nowSec
 	}
@@ -190,12 +170,10 @@ func (r *Refiner) shouldPass(key string, seqId uint64, tradeId string, nowSec in
 
 // ────────────────────────── 消息處理 ──────────────────────────
 
-// handleMsg：收 RAW → 交給對應 handler → 拿到 []Out → 去重與發佈
 func (r *Refiner) handleMsg(m *nats.Msg) error {
 	nowUS := time.Now().UnixNano() / 1e3
 	nowSec := nowUS / 1_000_000
 
-	// 使用 common 的 Envelope
 	var env marketcommonv1.Envelope
 	if err := proto.Unmarshal(m.Data, &env); err != nil {
 		return err
@@ -210,7 +188,7 @@ func (r *Refiner) handleMsg(m *nats.Msg) error {
 		return nil
 	}
 	ex := src.GetExchange()
-	fd := src.GetFeed() // feed 為 string
+	fd := src.GetFeed()
 
 	table := r.handlers[ex]
 	if table == nil {
@@ -245,7 +223,7 @@ func (r *Refiner) handleMsg(m *nats.Msg) error {
 		sym := out.GetSymbol()
 		key := makeKey(ex, fd, sym)
 
-		// 取去重 id（從 Any 解包，找出 seqId / tradeId）
+		// 取去重 id（KLINE 無鍵 → 0,""）
 		seqId, tradeId := extractIds(out)
 		if !r.shouldPass(key, seqId, tradeId, nowSec) {
 			continue
@@ -262,19 +240,16 @@ func (r *Refiner) handleMsg(m *nats.Msg) error {
 }
 
 func makeKey(ex marketcommonv1.Exchange, fd string, symbol string) string {
-	// ex 用數字字串、feed 直接用字串，避免 string(rune(x)) 造成單字元碰撞
 	return strconv.FormatInt(int64(ex), 10) + "|" + fd + "|" + symbol
 }
 
-// 從 Envelope 抽取 seqId / tradeId（若無則為 0 / ""）
-// 已支援：OKXTradeBody / OKXAllTradeBody / OKXBBOBody / OKXBooksBody
-// 以及新加入：OKXMarkPriceBody / OKXIndexTickersBody（皆無去重鍵，回傳 0,""）
+// extractIds：支援 HF（trades/bbo/book）與 LF（kline）
+// KLINE 系列無 seqId / tradeId → 回傳 0,""
 func extractIds(out *marketcommonv1.Envelope) (seq uint64, tradeId string) {
 	a := out.GetBody()
 	if a == nil {
 		return 0, ""
 	}
-
 	tu := a.GetTypeUrl()
 
 	switch {
@@ -298,47 +273,23 @@ func extractIds(out *marketcommonv1.Envelope) (seq uint64, tradeId string) {
 		if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
 			return t.GetSeqId(), ""
 		}
-	case hasTypeSuffix(tu, ".OKXMarkPriceBody"):
-		// 無 seqId / tradeId
+
+	// LF KLINE
+	case hasTypeSuffix(tu, ".OKXMarkPriceKLineBody"):
 		return 0, ""
-	case hasTypeSuffix(tu, ".OKXIndexTickersBody"):
-		// 無 seqId / tradeId
+	case hasTypeSuffix(tu, ".OKXIndexKLineBody"):
 		return 0, ""
+
+	// 後備保險
 	default:
-		// 後備：逐一嘗試，避免因 type_url 前綴差異漏解
 		{
-			var t marketstreamv1.OKXTradeBody
-			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
-				return t.GetSeqId(), t.GetTradeId()
-			}
-		}
-		{
-			var t marketstreamv1.OKXAllTradeBody
-			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
-				return 0, t.GetTradeId()
-			}
-		}
-		{
-			var t marketstreamv1.OKXBBOBody
-			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
-				return t.GetSeqId(), ""
-			}
-		}
-		{
-			var t marketstreamv1.OKXBooksBody
-			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
-				return t.GetSeqId(), ""
-			}
-		}
-		// 這兩個本來就無鍵，可直接略過
-		{
-			var t marketstreamv1.OKXMarkPriceBody
+			var t marketklinev1.OKXMarkPriceKLineBody
 			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
 				return 0, ""
 			}
 		}
 		{
-			var t marketstreamv1.OKXIndexTickersBody
+			var t marketklinev1.OKXIndexKLineBody
 			if err := anypb.UnmarshalTo(a, &t, proto.UnmarshalOptions{}); err == nil {
 				return 0, ""
 			}
@@ -347,9 +298,7 @@ func extractIds(out *marketcommonv1.Envelope) (seq uint64, tradeId string) {
 	return 0, ""
 }
 
-// hasTypeSuffix 檢查 Any 的 type_url 是否以指定後綴結尾
 func hasTypeSuffix(typeURL, suffix string) bool {
-	// 常見前綴如：type.googleapis.com/market.stream.v1.OKXBooksBody
 	if len(typeURL) < len(suffix) {
 		return false
 	}
