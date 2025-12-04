@@ -3,7 +3,7 @@
 //
 // 職責 (Responsibility):
 //     定義 Collector 與其設定，用來統一管理「WS 訂閱 → 解析 → 發佈」的資料收集流程。
-//     將「連線細節 (WSClient)」與「交易所協定 (Adapter)」與「發佈介面 (Bus)」組裝在一起。
+//     將「連線細節 (WSClient)」與「交易所協定 (Adapter)」與「發佈介面 (pubsub.Publisher)」組裝在一起。
 //
 // 注意事項 (Notes):
 //     - Collector 本身不理解業務，只負責流程與錯誤處理、重連與心跳。
@@ -55,51 +55,35 @@ type CollectorConfig struct {
 	ReconnectBackoff time.Duration
 }
 
-// Collector 負責整合 WSClient、Adapter 與 pubsub.Bus 的收集流程。
+// Collector 負責整合 WSClient、Adapter 與 pubsub.Publisher 的收集流程。
 //
 // 功能:
 //   - 使用 WSClient 建立與維護 WebSocket 連線。
 //   - 透過 Adapter 建構訂閱封包、心跳訊息與資料解析。
-//   - 將解析完成的資料發佈到 pubsub.Bus。
+//   - 將解析完成的資料發佈到 pubsub.Publisher 介面。
 //
 // 欄位說明:
 //   - ws:   實際的 WebSocket 客戶端實作（例如 GorillaWS），必須實作 WSClient 介面。
 //   - adj:  交易所 Adapter，負責協定細節（訂閱格式、心跳、訊息解析）。
-//   - pub:  發佈介面（例如 NATS Bus），負責將處理好的資料送到內部總線。
+//   - pub:  發佈介面（實作 pubsub.Publisher，例如 NATSCoreBus 或 LogBus），負責將處理好的資料送到內部總線。
 //   - conf: Collector 行為設定（端點、訂閱標的、心跳、重連策略）。
-//
-// 契約 / 限制:
-//   - Collector 本身不保證消息一定不丟，只在錯誤時盡量重連與重新訂閱。
-//   - Run 須由上層控制生命週期（ctx.Done），否則會持續阻塞在 Recv 。
-//
-// 備註:
-//   - 適合作為「交易所資料收集器」的基底元件，具體策略由 Adapter 決定。
 type Collector struct {
 	ws   WSClient
 	adj  Adapter
-	pub  pubsub.Bus
+	pub  pubsub.Publisher
 	conf CollectorConfig
 }
 
-// NewCollector 建立 Collector 實例。
-//
 // 功能:
-//   - 接收 WSClient、Adapter、Bus 與 Config，組合成一個 Collector。
+//   - 接收 WSClient、Adapter、Publisher 與 Config，組合成一個 Collector。
 //   - 若 ReconnectBackoff 未設定或為非正值，會套用預設 3 秒。
 //
 // 參數:
 //   - ws:   具體 WebSocket 客戶端實作。
 //   - adj:  具體交易所 Adapter 實作。
-//   - pub:  發佈資料用的 Bus 實作。
+//   - pub:  發佈資料用的 Publisher 實作（例如 NATSCoreBus）。
 //   - conf: Collector 的靜態設定。
-//
-// 回傳:
-//   - *Collector: 建構完成的 Collector 實例。
-//   - 無 error。
-//
-// 備註:
-//   - 建構後仍需呼叫 Connect 與 Subscribe 再進行 Run。
-func NewCollector(ws WSClient, adj Adapter, pub pubsub.Bus, conf CollectorConfig) *Collector {
+func NewCollector(ws WSClient, adj Adapter, pub pubsub.Publisher, conf CollectorConfig) *Collector {
 	if conf.ReconnectBackoff <= 0 {
 		conf.ReconnectBackoff = 3 * time.Second
 	}
@@ -157,7 +141,7 @@ func (c *Collector) Subscribe(ctx context.Context) error {
 //
 // 功能:
 //   - 根據 Adapter / Config 決定是否定期送出 ping 或 heartbeat payload。
-//   - 持續從 WSClient.Recv 取得訊息，交給 Adapter 解析，再用 Bus.Publish 發佈。
+//   - 持續從 WSClient.Recv 取得訊息，交給 Adapter 解析，再用 Publisher.Publish 發佈。
 //   - 當 Recv 發生錯誤時，會關閉連線、等待 backoff，然後嘗試重連與重新訂閱。
 //   - 若 ctx 被取消（ctx.Done 收到訊號），則優雅結束主循環。
 //
@@ -259,7 +243,7 @@ func (c *Collector) Run(ctx context.Context) error {
 //   - error: 若 WSClient.Close 發生錯誤則回傳，成功或已關閉時為 nil。
 //
 // 備註:
-//   - 僅關閉 WS 連線，並不會關閉 pubsub.Bus 或做其他清理。
+//   - 僅關閉 WS 連線，並不會關閉發佈端（例如 NATS 連線）或做其他清理，這部分交由上層管理。
 func (c *Collector) Close() error {
 	return c.ws.Close()
 }

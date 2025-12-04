@@ -2,8 +2,8 @@
 // Package: pubsub
 //
 // 職責 (Responsibility):
-//     定義系統內部使用的訊息總線抽象層（Bus 介面）。
-//     提供統一的 Publish / Request / Subscribe 介面，讓上層不直接依賴特定實作（例如 NATS）。
+//     定義系統內部使用的訊息總線抽象層（Publisher / Subscriber / Bus 介面）。
+//     提供統一的 Publish / Subscribe 能力，讓上層只依賴自己需要的能力，而不直接綁定 NATS 等具體實作。
 //
 // 注意事項 (Notes):
 //     - 這裡只定義介面與基本選項，不負責實際連線與重連邏輯。
@@ -153,23 +153,53 @@ func WithMaxInflight(n int) SubOpt {
 	}
 }
 
-// Bus 抽象訊息總線介面。
+// Publisher 抽象「只負責發佈」的訊息總線能力。
 //
 // 功能:
-//   - 統一封裝訊息發佈、請求/回應與訂閱的行為，隔離具體實作（如 NATS）。
+//   - 定義發佈訊息的最小能力集合，提供給只需要送出訊息的元件（例如 Collector）。
 //
 // 契約 / 限制:
 //   - Publish 應在成功時回傳 nil，錯誤時回傳底層實作的錯誤。
-//   - Request 應在超時或錯誤時回傳 error；成功時回傳一則 Message。
+//   - 具體的重試與失敗處理策略由呼叫端或實作層決定。
+//
+// 備註:
+//   - 適合用在單向資料流（例如「WS → Bus」），不強迫實作訂閱或關閉行為。
+type Publisher interface {
+	Publish(ctx context.Context, subject string, data []byte) error
+}
+
+// Subscriber 抽象「只負責訂閱」的訊息總線能力。
+//
+// 功能:
+//   - 定義訂閱與綁定 Handler 的最小能力集合，供需要從訊息總線接收事件的元件使用。
+//
+// 契約 / 限制:
+//   - Subscribe 應在訂閱建立成功時回傳 Subscription；建立失敗時回傳錯誤與 nil Subscription。
+//   - Subscription 的生命周期管理（Unsubscribe / Drain）由呼叫端負責。
+//
+// 備註:
+//   - 適合用在僅需「從 Bus 收訊」的元件，不要求具備發佈能力。
+type Subscriber interface {
+	Subscribe(ctx context.Context, subject string, h Handler, opts ...SubOpt) (Subscription, error)
+}
+
+// Bus 抽象完整訊息總線介面。
+//
+// 功能:
+//   - 統一封裝訊息發佈與訂閱的行為，隔離具體實作（如 NATS）。
+//   - 透過組合 Publisher / Subscriber 介面，讓上層可以視需求只依賴部分能力。
+//
+// 契約 / 限制:
+//   - Publish 應在成功時回傳 nil，錯誤時回傳底層實作的錯誤。
 //   - Subscribe 應在訂閱建立成功時回傳 Subscription；建立失敗時回傳錯誤與 nil Subscription。
 //   - Close 應釋放底層資源，多次呼叫應具備安全性（不得 panic）。
 //
 // 備註:
-//   - 具體的錯誤類型與重試策略由實作層與上層協作決定。
+//   - 建議上層元件優先依賴 Publisher 或 Subscriber 這類較小介面；
+//     只有同時需要收發能力時才依賴整體 Bus。
 type Bus interface {
-	Publish(ctx context.Context, subject string, data []byte) error
-	Request(ctx context.Context, subject string, data []byte) (*Message, error)
-	Subscribe(ctx context.Context, subject string, h Handler, opts ...SubOpt) (Subscription, error)
+	Publisher
+	Subscriber
 	Close()
 }
 
@@ -183,7 +213,8 @@ type Bus interface {
 //   - Name: 連線名稱，用於監控或除錯時辨識 client。
 //   - PingInterval: ping 間隔時間；為 0 時由實作層套用預設值。
 //   - ReconnectWait: 重新連線等待時間；為 0 時由實作層套用預設值。
-//   - Timeout: Request 等待回應的預設逾時；為 0 時由實作層套用預設值。
+//   - Timeout: 等待回應或其他需要逾時控制操作的預設逾時；為 0 時由實作層套用預設值。
+//     目前 NATSCoreBus 尚未使用此欄位，預留給像 Request 等需要逾時控制的操作。
 //   - MaxReconnects: 最大重連次數，-1 代表無限，0 代表使用 NATS 預設值。
 //
 // 契約 / 限制:

@@ -3,7 +3,7 @@
 //
 // 職責 (Responsibility):
 //     提供以 NATS 為底層實作的 Bus 版本（NATSCoreBus）。
-//     負責建立 NATS 連線、封裝 Publish / Request / Subscribe 與資源關閉邏輯。
+//     負責建立 NATS 連線、封裝 Publish / Subscribe 與資源關閉邏輯，實作 Bus / Publisher / Subscriber 介面。
 //
 // 注意事項 (Notes):
 //     - 僅處理「Core NATS」功能，不含 JetStream。
@@ -75,8 +75,8 @@ func (s *natsCoreSub) Drain() error { return s.sub.Drain() }
 // NATSCoreBus 是以 NATS 為底層實作的 Bus。
 //
 // 功能:
-//   - 使用 BusOptions 建立 NATS 連線，並提供 Publish / Request / Subscribe / Close 的實作。
-//   - 封裝 NATS 連線物件，讓上層只依賴 Bus 介面。
+//   - 使用 BusOptions 建立 NATS 連線，並提供 Publish / Subscribe / Close 的實作。
+//   - 封裝 NATS 連線物件，實作 Bus / Publisher / Subscriber 介面，讓上層只依賴抽象而非 NATS。
 //
 // 欄位說明:
 //   - nc:   底層 NATS 連線物件。
@@ -110,7 +110,7 @@ type NATSCoreBus struct {
 //   - 預設值行為：
 //     PingInterval  為 0 時 → 10 秒。
 //     ReconnectWait 為 0 時 → 500 毫秒。
-//     Timeout       為 0 時 → 5 秒。
+//     Timeout       為 0 時 → 5 秒（目前僅預設填入，尚未在 NATSCoreBus 中實際使用）。
 //     MaxReconnects 為 0 時 → -1（視為無限重連）。
 func NewNATSCoreBus(opts BusOptions) (*NATSCoreBus, error) {
 	if opts.PingInterval == 0 {
@@ -158,43 +158,6 @@ func NewNATSCoreBus(opts BusOptions) (*NATSCoreBus, error) {
 func (b *NATSCoreBus) Publish(ctx context.Context, subject string, data []byte) error {
 	_ = ctx // 保留 ctx 參數，之後若要擴充可使用
 	return b.nc.Publish(subject, data)
-}
-
-// Request 送出一則請求並等待回應。
-//
-// 功能:
-//   - 在指定 subject 上送出請求資料，並在逾時前等待一則回應訊息。
-//   - 逾時時間預設來自 BusOptions.Timeout，若 ctx 有 deadline 則優先使用 ctx 的 deadline。
-//
-// 參數:
-//   - ctx:     用於控制逾時與取消的 context；若含 deadline，會覆蓋預設 Timeout。
-//   - subject: 請求主題。
-//   - data:    請求 payload 資料。
-//
-// 回傳:
-//   - *Message: 成功收到回應時，轉換成 Message 後回傳。
-//   - error:   若逾時或底層 NATS 發生錯誤則回傳錯誤。
-//
-// 備註:
-//   - 目前僅填入 Subject、Data、ReceivedAt，Header 尚未從 nats.Msg 映射。
-func (b *NATSCoreBus) Request(ctx context.Context, subject string, data []byte) (*Message, error) {
-	timeout := b.opts.Timeout
-	if deadline, ok := ctx.Deadline(); ok {
-		timeout = time.Until(deadline)
-		if timeout <= 0 {
-			return nil, context.DeadlineExceeded
-		}
-	}
-	msg, err := b.nc.Request(subject, data, timeout)
-	if err != nil {
-		return nil, err
-	}
-	return &Message{
-		Subject:    msg.Subject,
-		Data:       msg.Data,
-		Header:     nil, // 如需 header，可再映射 msg.Header
-		ReceivedAt: time.Now(),
-	}, nil
 }
 
 // Subscribe 建立一個 NATS 訂閱並綁定 Handler。
