@@ -93,6 +93,12 @@ type NATSCoreBus struct {
 	opts BusOptions
 }
 
+var (
+	_ Bus        = (*NATSCoreBus)(nil)
+	_ Publisher  = (*NATSCoreBus)(nil)
+	_ Subscriber = (*NATSCoreBus)(nil)
+)
+
 // NewNATSCoreBus 建立一個使用 NATS Core 的 Bus 實例。
 //
 // 功能:
@@ -110,7 +116,7 @@ type NATSCoreBus struct {
 //   - 預設值行為：
 //     PingInterval  為 0 時 → 10 秒。
 //     ReconnectWait 為 0 時 → 500 毫秒。
-//     Timeout       為 0 時 → 5 秒（目前僅預設填入，尚未在 NATSCoreBus 中實際使用）。
+//     Timeout       為 0 時 → 5 秒（會透過 nats.Timeout 套用到 NATS 連線 timeout）。
 //     MaxReconnects 為 0 時 → -1（視為無限重連）。
 func NewNATSCoreBus(opts BusOptions) (*NATSCoreBus, error) {
 	if opts.PingInterval == 0 {

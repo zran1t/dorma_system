@@ -74,6 +74,7 @@ type Collector struct {
 	conf CollectorConfig
 }
 
+// NewCollector 建立 Collector 實例。
 // 功能:
 //   - 接收 WSClient、Adapter、Publisher 與 Config，組合成一個 Collector。
 //   - 若 ReconnectBackoff 未設定或為非正值，會套用預設 3 秒。

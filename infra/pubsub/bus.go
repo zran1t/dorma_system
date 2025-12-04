@@ -61,7 +61,7 @@ type Message struct {
 //   - error: 若處理失敗則回傳錯誤，實作端可視需要記錄或採取重試策略；成功時回傳 nil。
 //
 // 備註:
-//   - 具體錯誤處理策略由呼叫端或實作層決定，Bus 介面本身不強制規範。
+//   - 具體錯誤處理策略由呼叫端或實作層決定，這裡不強制規範。
 type Handler func(ctx context.Context, m *Message) error
 
 // Subscription 抽象訂閱的生命周期操作。
@@ -213,8 +213,9 @@ type Bus interface {
 //   - Name: 連線名稱，用於監控或除錯時辨識 client。
 //   - PingInterval: ping 間隔時間；為 0 時由實作層套用預設值。
 //   - ReconnectWait: 重新連線等待時間；為 0 時由實作層套用預設值。
-//   - Timeout: 等待回應或其他需要逾時控制操作的預設逾時；為 0 時由實作層套用預設值。
-//     目前 NATSCoreBus 尚未使用此欄位，預留給像 Request 等需要逾時控制的操作。
+//   - Timeout: 連線與請求等操作的預設逾時；為 0 時由實作層套用預設值。
+//     在 NATSCoreBus 中會透過 nats.Timeout(opts.Timeout) 套用到 NATS 連線選項，
+//     未來也可擴充用在 Request 等需要逾時控制的操作。
 //   - MaxReconnects: 最大重連次數，-1 代表無限，0 代表使用 NATS 預設值。
 //
 // 契約 / 限制:
