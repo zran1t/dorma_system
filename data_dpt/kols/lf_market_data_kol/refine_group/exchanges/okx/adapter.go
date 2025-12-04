@@ -11,9 +11,9 @@ import (
 
 	rg "dorma_system/data_dpt/kols/lf_market_data_kol/refine_group"
 	"dorma_system/infra/symbols"
-	marketcommonv1 "dorma_system/schemas/gen/go/market_common_v1"
-	marketklinev1 "dorma_system/schemas/gen/go/market_kline_v1"
-	marketstreamv1 "dorma_system/schemas/gen/go/market_stream_v1"
+	marketcommonv1 "dorma_system/schemas/gen/go/market/common/v1"
+	marketklinev1 "dorma_system/schemas/gen/go/market/kline/v1"
+	marketstreamv1 "dorma_system/schemas/gen/go/market/stream/v1"
 
 	"github.com/zeebo/xxh3"
 	"google.golang.org/protobuf/proto"
@@ -95,9 +95,9 @@ func handleAnyCandle(env *marketcommonv1.Envelope, res symbols.Resolver, isMark 
 			HighE9:     dec1e9(row[2]),
 			LowE9:      dec1e9(row[3]),
 			CloseE9:    dec1e9(row[4]),
-			VolumeE9:   0,       // OKX mark/index 不提供量
-			Confirmed:  true,    // 已過濾 confirm=1
-			VendorTsUs: openUS,  // 來源 open ts
+			VolumeE9:   0,      // OKX mark/index 不提供量
+			Confirmed:  true,   // 已過濾 confirm=1
+			VendorTsUs: openUS, // 來源 open ts
 		})
 	}
 	if len(bars) == 0 {
@@ -112,8 +112,8 @@ func handleAnyCandle(env *marketcommonv1.Envelope, res symbols.Resolver, isMark 
 
 	if isMark {
 		msg := &marketklinev1.OKXMarkPriceKLineBody{
-			Version: 1,
-			Bars:    bars,
+			SchemaVersion: "",
+			Bars:          bars,
 		}
 		srcFeed = "KLINE.MARKPRICE"
 		anyBody, _ = anypb.New(msg)
@@ -121,8 +121,8 @@ func handleAnyCandle(env *marketcommonv1.Envelope, res symbols.Resolver, isMark 
 		subject = buildCandleSubject(true, canon, interval)
 	} else {
 		msg := &marketklinev1.OKXIndexKLineBody{
-			Version: 1,
-			Bars:    bars,
+			SchemaVersion: "",
+			Bars:          bars,
 		}
 		srcFeed = "KLINE.INDEX"
 		anyBody, _ = anypb.New(msg)
@@ -242,19 +242,14 @@ func parseMSasUS(msStr string) uint64 {
 }
 
 // SWAP/INDEX 規則化
+// 強制化 SWAP / INDEX，不吃傳入後綴
 func canonicalSymbolForKline(c string, isMark bool) string {
 	c = strings.ToUpper(strings.TrimSpace(c))
-	parts := strings.Split(c, "-")
-	if len(parts) == 2 {
-		// INDEX 家族會傳 BASE-QUOTE → 加 -INDEX
-		if !isMark {
-			return parts[0] + "-" + parts[1] + "-INDEX"
-		}
-		// MARK 一律以 SWAP 表示合約級
-		return parts[0] + "-" + parts[1] + "-SWAP"
+	base, quote, _ := splitCanonical(c) // 忽略原 suffix
+	if isMark {
+		return base + "-" + quote + "-SWAP"
 	}
-	// 已有尾綴的，直接返回
-	return c
+	return base + "-" + quote + "-INDEX"
 }
 
 func inferMarketType(c string) marketcommonv1.MarketType {
@@ -271,14 +266,23 @@ func inferMarketType(c string) marketcommonv1.MarketType {
 	}
 }
 
-// CLEAN.OKX.MARK-CANDLE.<BASE>.<QUOTE>.<INTERVAL>
-// CLEAN.OKX.INDEX-CANDLE.<BASE>.<QUOTE>.<INTERVAL>
-func buildCandleSubject(isMark bool, canonical string, interval string) string {
-	base, quote, _ := splitCanonical(canonical)
-	if isMark {
-		return fmt.Sprintf("CLEAN.OKX.MARK-CANDLE.%s.%s.%s", base, quote, interval)
+// CLEAN subject 命名（新版）：
+// CLEAN.OKX.MARK-CANDLE.<BASE>.<QUOTE>.<SUFFIX>.<INTERVAL>
+// CLEAN.OKX.INDEX-CANDLE.<BASE>.<QUOTE>.<SUFFIX>.<INTERVAL>
+// 例：CLEAN.OKX.MARK-CANDLE.BTC.USDT.SWAP.1m
+//
+//	CLEAN.OKX.INDEX-CANDLE.BTC.USDT.INDEX.1Dutc
+func buildCandleSubject(isMark bool, canonical, interval string) string {
+	base, quote, _ := splitCanonical(strings.ToUpper(strings.TrimSpace(canonical)))
+
+	suffix := "SWAP"
+	family := "MARK-CANDLE"
+	if !isMark {
+		suffix = "INDEX"
+		family = "INDEX-CANDLE"
 	}
-	return fmt.Sprintf("CLEAN.OKX.INDEX-CANDLE.%s.%s.%s", base, quote, interval)
+
+	return fmt.Sprintf("CLEAN.OKX.%s.%s.%s.%s.%s", family, base, quote, suffix, interval)
 }
 
 // 拆 canonical（BTC-USDT-SWAP / BTC-USDT / …）

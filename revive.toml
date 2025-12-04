@@ -1,0 +1,110 @@
+# ====================================================================
+# revive.toml — Go 專案程式風格與品質檢查設定
+# 備註：
+#   - ignoreGeneratedHeader = false 表示忽略自動生成代碼 (反向邏輯)
+#   - severity = "info" 只改顏色，統計仍算 warning
+# ====================================================================
+
+ignoreGeneratedHeader = false # bug: false 代表忽略自動產生的程式碼 (邏輯反轉)
+severity = "info" # 全域預設警告等級，可用等級：info / warning / error
+
+
+# ====================================================================
+# 📘 文件與註解規範
+# ====================================================================
+
+# 匯出成員必須有註解
+[rule.exported]
+severity = "error"
+
+# package 開頭需有註解 ("Package xxx ...")
+[rule.package-comments]
+severity = "info"
+
+# 註解格式檢查：空格、大寫、標點、行內間距
+[rule.comment-spacings]
+severity = "error"
+arguments = ["check-all"]
+
+
+# ====================================================================
+# 🧱 命名與結構規範
+# ====================================================================
+
+# 命名符合 Go 慣例（camelCase、小寫開頭、常數 PascalCase）
+[rule.var-naming]
+severity = "warning"
+
+# 禁止覆蓋內建識別符（len, error, new...）
+[rule.redefines-builtin-id]
+severity = "error"
+
+# 命名不得與內建關鍵字相似（map, chan 等）
+[rule.confusing-naming]
+severity = "warning"
+
+# 限制單檔 public struct 數量（鼓勵拆檔）
+[rule.max-public-structs]
+severity = "warning"
+arguments = [5]
+
+
+# ====================================================================
+# ⚙️ 邏輯與流程檢查
+# ====================================================================
+
+# 限制函式回傳參數數量
+[rule.function-result-limit]
+severity = "warning"
+arguments = [3]
+
+# 檢查錯誤流程縮排是否過深，建議 early return
+[rule.indent-error-flow]
+severity = "warning"
+
+# 檢查未使用的 method receiver
+[rule.unused-receiver]
+severity = "warning"
+
+# 偵測恆真/恆假條件式（if true、1 == 1）
+[rule.constant-logical-expr]
+severity = "error"
+
+# 控制函式循環/條件複雜度上限 (Cyclomatic Complexity)
+[rule.cyclomatic]
+severity = "warning"
+arguments = [15]
+
+# 避免多層巢狀 return、break、continue
+[rule.deep-exit]
+severity = "warning"
+
+# 禁止直接以 == 比較 time.Time（應使用 t1.Equal(t2)）
+[rule.time-equal]
+severity = "error"
+
+# 建議提前 return 減少巢狀 if（改善可讀性）
+[rule.early-return]
+severity = "warning"
+
+
+# ====================================================================
+# 🎨 程式風格與乾淨度
+# ====================================================================
+
+# 檢查多餘空行（禁止連續空白或區塊開頭空行）
+[rule.empty-lines]
+severity = "warning"
+
+# 限制每行最大字元數（維持 diff、log 可讀性）
+[rule.line-length-limit]
+severity = "warning"
+arguments = [120]
+
+# 檢查重複 import 相同 package
+[rule.duplicated-imports]
+severity = "warning"
+
+# 防止變數名稱覆蓋 import 名稱（例如 json 套件）
+[rule.import-shadowing]
+severity = "warning"

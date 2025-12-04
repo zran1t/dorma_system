@@ -4,7 +4,7 @@
 
 ## 🧩 模組概觀
 
-`hf_market_data_kol` 是高頻行情資料部門的核心模組，負責從各交易所收集、清洗、聚合即時行情，並以統一的 **Envelope** 結構發佈至 NATS。  
+`hf_market_data_kol` 是高頻行情資料部門的核心模組，負責從各交易所收集、清洗、聚合即時行情，並以統一的 **Envelope** 結構發佈至 NATS。
 主要目標：
 
 > **以統一封包結構與 Subject 命名規範，實現跨交易所、跨市場的高效即時資料流通。**
@@ -34,15 +34,9 @@
 ### 1. **Collect Group — WebSocket 收集層**
 
 - 每個交易所、每個 feed（`trades`、`books`、`mark-price`…）對應一條 WebSocket。
-- 一條 WS 可同時訂閱多個 symbol。
-- 收到原始 JSON 後即封裝成：
+- 一條 WS 同時訂閱多個 symbol。
 
-```
-RAW.<EXCHANGE>.<FEED>.<SYMBOL>
-例：
-RAW.OKX.BOOK.BTC-USDT-SWAP
-RAW.OKX.TRADES.ETH-USDT
-```
+- 收到原始 JSON 後即封裝成：
 
 - 封包型態：
   ```proto
@@ -51,7 +45,7 @@ RAW.OKX.TRADES.ETH-USDT
     body = RawBody{ raw_data: bytes }
   }
   ```
-- 僅包裝原始資料與時間戳，不清洗。
+- gjson做淺層解析，提取channel與instid去判斷該送往的subject，原始封包原封不動塞進RawBody
 
 ---
 
@@ -61,7 +55,7 @@ RAW.OKX.TRADES.ETH-USDT
 - 訂閱 `RAW.<EXCHANGE>.<FEED>.>`。
 - 清洗流程：
   1. 解析 JSON → 對應 Proto 結構 (`OKXTradeBody`, `OKXBooksBody`, ... )。
-  2. 透過 `symbols.Resolver` 將交易所 symbol 轉為內部標準符號。
+  2. 透過 `symbols.Resolver` 將交易所 symbol 轉為內部標準符號(symbol_mapping)。
   3. 計算 `message_id`（xxh3-128，包含 feed 與 body）。
   4. 補齊 `Timestamps`。
   5. 發佈至 CLEAN 層。
@@ -158,7 +152,7 @@ MarketType 對應：
 | refiner_recv_us | 精煉組接收 RAW | µs |
 | refiner_pub_us | 精煉組推送 CLEAN | µs |
 
-> 可用來計算端對端延遲，例如  
+> 可用來計算端對端延遲，例如
 > `refiner_pub_us - collect_recv_us = total_latency_us`
 
 ---
@@ -198,9 +192,9 @@ len(exchange) | exchange | len(feed) | feed | len(body) | body_bytes
 | BookGroup | 單 goroutine | 訂閱 `BOOK.DELTA.>`；所有 symbol 順序處理 |
 
 > 優點：
-> - 保證資料序列一致性  
-> - 無鎖設計  
-> - Feed 間天然併行  
+> - 保證資料序列一致性
+> - 無鎖設計
+> - Feed 間天然併行
 > - 無 goroutine 爆炸與 channel 同步開銷
 
 ---
@@ -230,11 +224,11 @@ len(exchange) | exchange | len(feed) | feed | len(body) | body_bytes
 
 ## 🪜 未來可擴充項目
 
-- **Refresh Control**  
+- **Refresh Control**
   - BookGroup 偵測 CRC mismatch 後向 Collect 發送 control subject 請求重拉 snapshot。
-- **Validator Layer**  
+- **Validator Layer**
   - Refine 發佈前自動檢查 proto schema、欄位範圍。
-- **Prometheus Exporter**  
+- **Prometheus Exporter**
   - 收集 feed QPS、FULL 節流次數、CRC 錯誤率。
 
 ---
@@ -264,13 +258,13 @@ asks[0]: 65300.3 ...
 
 ## 📘 作者註記
 
-> **hf_market_data_kol** 模組由 Data Department / KOL Market Data 維護。  
->  
+> **hf_market_data_kol** 模組由 Data Department / KOL Market Data 維護。
+>
 > 職責：
-> - Collect 組：交易所 WS 收集與重連機制  
-> - Refine 組：標準化與封包一致性  
-> - Book 組：訂單簿合併、校驗與節流  
->  
-> 所有資料最終均以 `Envelope` 為唯一通訊格式。  
->  
+> - Collect 組：交易所 WS 收集與重連機制
+> - Refine 組：標準化與封包一致性
+> - Book 組：訂單簿合併、校驗與節流
+>
+> 所有資料最終均以 `Envelope` 為唯一通訊格式。
+>
 > 修改前請閱讀本文件後再查看各層 Chief / Adapter 內部註解。

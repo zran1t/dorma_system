@@ -1,0 +1,204 @@
+syntax = "proto3";
+
+package envelope.v1;
+
+option optimize_for = SPEED;
+// Go import: dorma_system/schemas/gen/go/envelope/v1
+option go_package = "dorma_system/schemas/gen/go/envelope/v1;envelopev1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+// ───────────────────────────────────────────────────────────────
+// Envelope v1（無 history 版）
+// 觀念：
+// - route.origin / route.target = 封包生命週期「起/終」意圖（不變）。
+// - source / destination = 本次轉送的「當前這一跳」端點（每跳更新）。
+// - trace_id 在整個生命週期內固定；hop 每轉送 +1，供去重與追蹤。
+// - 所有 Headers 僅鏡射本訊封欄位；如有矛盾，以 Subject + Envelope/Body 為準。
+// 建議 Headers：
+//   Content-Type: application/x-protobuf
+//   Nats-Msg-Id : {trace_id}:{hop}         // JetStream duplicates 去重
+//   X-Trace-Id  : trace_id
+//   X-Layer     : layer
+//   X-Direction : direction
+//   X-Version   : version
+//   X-Proto-Type: body.payload.type_url
+//   X-Hop       : hop
+// ───────────────────────────────────────────────────────────────
+
+// 層級（inter：部門↔部門；intra：部門↔科別）
+enum Layer {
+  LAYER_UNSPECIFIED = 0;
+  LAYER_INTER       = 1; // 部門 ↔ 部門（水平）
+  LAYER_INTRA       = 2; // 部門 ↔ 科別（垂直）
+}
+
+// 方向
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_UP          = 1; // 上行：科別 → 部門
+  DIRECTION_DOWN        = 2; // 下行：部門 → 科別
+  DIRECTION_LATERAL     = 3; // 水平：同層互傳（多見於部門↔部門）
+}
+
+// 節點類型
+enum ActorType {
+  ACTOR_TYPE_UNSPECIFIED = 0;
+  ACTOR_TYPE_API         = 1; // API / Gateway
+  ACTOR_TYPE_DPT         = 2; // 部門
+  ACTOR_TYPE_KOL         = 3; // 科別（KOL）
+  ACTOR_TYPE_SYS         = 4; // 系統模組（監控/排程）
+}
+
+// 優先級（監控/排程用）
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_LOW         = 1;
+  PRIORITY_NORMAL      = 2;
+  PRIORITY_HIGH        = 3;
+  PRIORITY_CRITICAL    = 4;
+}
+
+enum Category {
+  CATEGORY_UNSPECIFIED = 0;
+  CATEGORY_TRADE       = 1; // 下單、撮合
+  CATEGORY_DATA        = 2; // 行情資料
+  CATEGORY_SYSTEM      = 3; // 維運/管理
+  CATEGORY_OBSERVE     = 4; // 監控/日誌
+}
+
+enum Purpose {
+  PURPOSE_UNSPECIFIED = 0; // 預設 不確定有什麼動作 都先使用這個
+}
+
+// 節點（以「化名後的標準 actor_id」承載）
+message Actor {
+  ActorType type = 1;  // ROOM
+  string    id   = 2;  // 例："data_dpt_comm", "data_hf_market_data_kol_comm"
+}
+
+// ─────────── 意圖（Intent：粗分類 / 監控主要維度）───────────
+// 每個 Intent 對應一個「部門域」。
+// 用來標記封包語意的大方向，方便統計與監控。
+enum Intent {
+  INTENT_UNSPECIFIED = 0;
+
+  // ── 策略與下單域（strategy_dpt / place_orders_dpt）──
+  INTENT_ORDER        = 1;  // 下單相關（策略→風控、風控→下單）
+
+  // ── 風控域（risk_dpt 下含 capital_kol）──
+  INTENT_RISK         = 2;  // 風控相關（額度、保證金、資金凍結/釋放）
+
+  // ── 狀態域（state_dpt）──
+  INTENT_STATE        = 3;  // 倉位 / 資產 / 訂單狀態同步
+
+  // ── 資料域（data_dpt）──
+  INTENT_DATA         = 4;  // 市場 / 參考資料請求或同步
+
+  // ── 系統維運域（initialization_dpt / observability_dpt）──
+  INTENT_ADMIN        = 5;  // 系統 / 維運 / 健康檢查 / 組態推送
+
+  // ── 監控與稽核域（observability_dpt）──
+  INTENT_OBSERVE      = 6;  // 日誌、追蹤、延遲監控、告警
+}
+
+ // ─────────── 細節需求（Requirement：依 Intent 分組）───────────
+message Requirement {
+  oneof kind {
+    OrderRequirement       order   = 1;
+    RiskRequirement        risk    = 2;
+    StateRequirement       state   = 3;
+    DataRequirement        data    = 4;
+    AdminRequirement       admin   = 5;
+    ObserveRequirement     observe = 6;
+  }
+}
+
+// === 策略與下單域（Intent=ORDER）===
+enum OrderRequirement {
+  ORDER_REQ_UNSPECIFIED  = 0;
+  ORDER_REQ_PLACE        = 1;  // 送出單
+  ORDER_REQ_AMEND        = 2;  // 改價 / 改量
+  ORDER_REQ_CANCEL       = 3;  // 撤單
+  ORDER_REQ_BULK_PLACE   = 4;  // 原子性組合下單（一起過）
+  ORDER_REQ_BULK_CANCEL  = 5;
+}
+
+// === 風控域（Intent=RISK）===
+enum RiskRequirement {
+  RISK_REQ_UNSPECIFIED   = 0;
+  RISK_REQ_PRECHECK      = 1;  // 下單前綜合預檢（額度 / 槓桿 / 集中度）
+  RISK_REQ_RESERVE       = 2;  // 凍結資金 / 保證金
+  RISK_REQ_COMMIT        = 3;  // 成交後實際扣帳
+  RISK_REQ_RELEASE       = 4;  // 釋放保留
+  RISK_REQ_POOL_SYNC     = 5;  // 資金池狀態同步（capital_kol 專屬）
+}
+
+// === 狀態域（Intent=STATE）===
+enum StateRequirement {
+  STATE_REQ_UNSPECIFIED  = 0;
+  STATE_REQ_POSITION_UPSERT = 1;  // 倉位更新 / 新增
+  STATE_REQ_BALANCE_UPSERT  = 2;  // 資金狀態更新
+  STATE_REQ_ORDER_SNAPSHOT  = 3;  // 訂單快照同步
+}
+
+// === 資料域（Intent=DATA）===
+enum DataRequirement {
+  DATA_REQ_UNSPECIFIED   = 0;
+  DATA_REQ_SYMBOL_SYNC   = 1;  // 交易對 / 標的同步
+  DATA_REQ_MARKET_SUB    = 2;  // 市場資料訂閱 / 退訂
+  DATA_REQ_REF_DATA      = 3;  // 參考資料請求
+  DATA_REQ_KLINE_SYNC    = 4;  // K 線資料批次同步
+}
+
+// === 系統維運域（Intent=ADMIN）===
+enum AdminRequirement {
+  ADMIN_REQ_UNSPECIFIED  = 0;
+  ADMIN_REQ_HEALTHCHECK  = 1;  // 健康檢查
+  ADMIN_REQ_CONFIG_PUSH  = 2;  // 組態下發
+  ADMIN_REQ_RELOAD       = 3;  // 模組重載
+  ADMIN_REQ_SHUTDOWN     = 4;  // 平滑關閉（graceful shutdown）
+}
+
+// === 監控域（Intent=OBSERVE）===
+enum ObserveRequirement {
+  OBSERVE_REQ_UNSPECIFIED = 0;
+  OBSERVE_REQ_AUDIT_LOG   = 1;  // 稽核 / 行為日誌（audit_kol）
+  OBSERVE_REQ_METRICS     = 2;  // 系統指標（metrics_kol）
+  OBSERVE_REQ_TRACING     = 3;  // 全鏈路追蹤（tracing_kol）
+  OBSERVE_REQ_ALERT       = 4;  // 告警推送（alerting_kol）
+}
+
+// 業務主體（唯一語意）
+message Body {
+  Intent intent = 1;
+  Requirement requirement = 2;
+  google.protobuf.Any payload = 3;
+  // 要做什麼事情 這件事情詳細要求 交給他的文件 payload
+}
+
+message Lifecycle {
+  Actor origin = 1;
+  Actor target = 2;
+  Purpose purpose = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+// 通用訊封
+message Envelope {
+  // 基本識別（鏡射到 Headers）
+  string                    version         = 1;  // 當前協議版本：1.0.0
+  string                    trace_id        = 2;  // 全鏈唯一 ID（UUIDv7）
+  Lifecycle                 lifecyce        = 3;  // 記錄生命週期訊息
+
+  google.protobuf.Timestamp source_pub_ts   = 4;  // 此次hop發送端建包時間
+  Layer                     layer           = 5;  // inter / intra
+  Direction                 direction       = 6;  // up / down / lateral
+  Actor                     source          = 7;  // 當前這一跳來源（化名後 actor_id）
+  Actor                     destination     = 8;  // 當前這一跳目的（化名後 actor_id）
+  Priority                  priority        = 9; // 優先級
+  Category                  category        = 10; // 監控用粗分類
+  Body                      body            = 11; // 實際要傳遞內容
+  string                    signature       = 12; // 防篡改欄位（HAMC)
+}

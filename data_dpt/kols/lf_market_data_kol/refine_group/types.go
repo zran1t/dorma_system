@@ -2,8 +2,8 @@
 package refine_group
 
 import (
-	marketcommonv1 "dorma_system/schemas/gen/go/market_common_v1"
 	"dorma_system/infra/symbols"
+	marketcommonv1 "dorma_system/schemas/gen/go/market/common/v1"
 )
 
 // Out 是 handler 產生的一筆輸出（含 subject 與封包）

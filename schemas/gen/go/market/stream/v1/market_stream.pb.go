@@ -2,16 +2,17 @@
 // versions:
 // 	protoc-gen-go v1.36.9
 // 	protoc        v6.32.0
-// source: market_stream_v1.proto
+// source: market/stream/v1/market_stream.proto
 
 package marketstreamv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -58,11 +59,11 @@ func (x Side) String() string {
 }
 
 func (Side) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[0].Descriptor()
+	return file_market_stream_v1_market_stream_proto_enumTypes[0].Descriptor()
 }
 
 func (Side) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[0]
+	return &file_market_stream_v1_market_stream_proto_enumTypes[0]
 }
 
 func (x Side) Number() protoreflect.EnumNumber {
@@ -71,7 +72,7 @@ func (x Side) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Side.Descriptor instead.
 func (Side) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{0}
 }
 
 // books 在系統內二次轉傳的方式
@@ -111,11 +112,11 @@ func (x Action) String() string {
 }
 
 func (Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_stream_v1_proto_enumTypes[1].Descriptor()
+	return file_market_stream_v1_market_stream_proto_enumTypes[1].Descriptor()
 }
 
 func (Action) Type() protoreflect.EnumType {
-	return &file_market_stream_v1_proto_enumTypes[1]
+	return &file_market_stream_v1_market_stream_proto_enumTypes[1]
 }
 
 func (x Action) Number() protoreflect.EnumNumber {
@@ -124,7 +125,7 @@ func (x Action) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Action.Descriptor instead.
 func (Action) EnumDescriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{1}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{1}
 }
 
 // ======================= RawBody =======================
@@ -138,7 +139,7 @@ type RawBody struct {
 
 func (x *RawBody) Reset() {
 	*x = RawBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[0]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +151,7 @@ func (x *RawBody) String() string {
 func (*RawBody) ProtoMessage() {}
 
 func (x *RawBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[0]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +164,7 @@ func (x *RawBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RawBody.ProtoReflect.Descriptor instead.
 func (*RawBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{0}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *RawBody) GetRawData() []byte {
@@ -177,20 +178,20 @@ func (x *RawBody) GetRawData() []byte {
 // OKX 的成交（聚合後）資料：清洗後欄位定義
 type OKXTradeBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                      // OKXTradeBody 版本號
-	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                // 成交價（e9）
-	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                // 成交量（e9）
-	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"` // BUY/SELL/UNKNOWN
-	Count         uint32                 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`                          // 被該 taker 吃到的 maker 數
-	SeqId         uint64                 `protobuf:"varint,6,opt,name=seqId,proto3" json:"seqId,omitempty"`                          // 來源 Sequence ID（掉包偵測/去重）
-	TradeId       string                 `protobuf:"bytes,7,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 來源交易 ID（對帳/二次去重）
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"` // 1.0.0
+	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                           // 成交價（e9）
+	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                           // 成交量（e9）
+	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"`            // BUY/SELL/UNKNOWN
+	Count         uint32                 `protobuf:"varint,5,opt,name=count,proto3" json:"count,omitempty"`                                     // 被該 taker 吃到的 maker 數
+	SeqId         uint64                 `protobuf:"varint,6,opt,name=seqId,proto3" json:"seqId,omitempty"`                                     // 來源 Sequence ID（掉包偵測/去重）
+	TradeId       string                 `protobuf:"bytes,7,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                                  // 來源交易 ID（對帳/二次去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXTradeBody) Reset() {
 	*x = OKXTradeBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[1]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -202,7 +203,7 @@ func (x *OKXTradeBody) String() string {
 func (*OKXTradeBody) ProtoMessage() {}
 
 func (x *OKXTradeBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[1]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -215,14 +216,14 @@ func (x *OKXTradeBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXTradeBody.ProtoReflect.Descriptor instead.
 func (*OKXTradeBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{1}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *OKXTradeBody) GetVersion() uint32 {
+func (x *OKXTradeBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXTradeBody) GetPxE9() int64 {
@@ -272,18 +273,18 @@ func (x *OKXTradeBody) GetTradeId() string {
 // 與 Trade 差異：AllTrades 無 count、無 seqId；每個被 take 的 maker 對應一則訊息
 type OKXAllTradeBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                      // OKXAllTradeBody 版本號
-	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                // 成交價（e9）
-	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                // 成交量（e9）
-	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"` // BUY/SELL/UNKNOWN
-	TradeId       string                 `protobuf:"bytes,5,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                       // 來源交易 ID（對帳/二次去重）
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"` // 1.0.0
+	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                           // 成交價（e9）
+	SzE9          int64                  `protobuf:"varint,3,opt,name=sz_e9,json=szE9,proto3" json:"sz_e9,omitempty"`                           // 成交量（e9）
+	Side          Side                   `protobuf:"varint,4,opt,name=side,proto3,enum=market.stream.v1.Side" json:"side,omitempty"`            // BUY/SELL/UNKNOWN
+	TradeId       string                 `protobuf:"bytes,5,opt,name=tradeId,proto3" json:"tradeId,omitempty"`                                  // 來源交易 ID（對帳/二次去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXAllTradeBody) Reset() {
 	*x = OKXAllTradeBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[2]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -295,7 +296,7 @@ func (x *OKXAllTradeBody) String() string {
 func (*OKXAllTradeBody) ProtoMessage() {}
 
 func (x *OKXAllTradeBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[2]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -308,14 +309,14 @@ func (x *OKXAllTradeBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXAllTradeBody.ProtoReflect.Descriptor instead.
 func (*OKXAllTradeBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{2}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *OKXAllTradeBody) GetVersion() uint32 {
+func (x *OKXAllTradeBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXAllTradeBody) GetPxE9() int64 {
@@ -350,7 +351,7 @@ func (x *OKXAllTradeBody) GetTradeId() string {
 // OKX 的最優買賣（BBO）：清洗後欄位定義
 type OKXBBOBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                                    // OKXBBOBody 版本號
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`    // 1.0.0
 	BidPxE9       int64                  `protobuf:"varint,2,opt,name=bid_px_e9,json=bidPxE9,proto3" json:"bid_px_e9,omitempty"`                   // 最優買價（e9)
 	BidQtyE9      int64                  `protobuf:"varint,3,opt,name=bid_qty_e9,json=bidQtyE9,proto3" json:"bid_qty_e9,omitempty"`                // 最優買價數量（e9）
 	BidOrderCount uint32                 `protobuf:"varint,4,opt,name=bid_order_count,json=bidOrderCount,proto3" json:"bid_order_count,omitempty"` // 最優買價掛單數
@@ -364,7 +365,7 @@ type OKXBBOBody struct {
 
 func (x *OKXBBOBody) Reset() {
 	*x = OKXBBOBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[3]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -376,7 +377,7 @@ func (x *OKXBBOBody) String() string {
 func (*OKXBBOBody) ProtoMessage() {}
 
 func (x *OKXBBOBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[3]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -389,14 +390,14 @@ func (x *OKXBBOBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBBOBody.ProtoReflect.Descriptor instead.
 func (*OKXBBOBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{3}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *OKXBBOBody) GetVersion() uint32 {
+func (x *OKXBBOBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXBBOBody) GetBidPxE9() int64 {
@@ -458,7 +459,7 @@ type OKXBookLevel struct {
 
 func (x *OKXBookLevel) Reset() {
 	*x = OKXBookLevel{}
-	mi := &file_market_stream_v1_proto_msgTypes[4]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -470,7 +471,7 @@ func (x *OKXBookLevel) String() string {
 func (*OKXBookLevel) ProtoMessage() {}
 
 func (x *OKXBookLevel) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[4]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -483,7 +484,7 @@ func (x *OKXBookLevel) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBookLevel.ProtoReflect.Descriptor instead.
 func (*OKXBookLevel) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{4}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *OKXBookLevel) GetPxE9() int64 {
@@ -502,20 +503,20 @@ func (x *OKXBookLevel) GetQtyE9() int64 {
 
 type OKXBooksBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                            // OKXBooksBody 版本號
-	Action        Action                 `protobuf:"varint,2,opt,name=action,proto3,enum=market.stream.v1.Action" json:"action,omitempty"` // 完整快照/增量更新/清空
-	Bids          []*OKXBookLevel        `protobuf:"bytes,3,rep,name=bids,proto3" json:"bids,omitempty"`                                   // bids 刷新（陣列：px:qty）
-	Asks          []*OKXBookLevel        `protobuf:"bytes,4,rep,name=asks,proto3" json:"asks,omitempty"`                                   // asks 刷新（陣列：px:qty）
-	Checksum      int32                  `protobuf:"varint,5,opt,name=checksum,proto3" json:"checksum,omitempty"`                          // 交易所校驗值，確保訂單簿一致性
-	PrevSeqId     int64                  `protobuf:"varint,6,opt,name=prev_seqId,json=prevSeqId,proto3" json:"prev_seqId,omitempty"`       // 增量鏈接的上一個 seqId，協助掉包判斷
-	SeqId         uint64                 `protobuf:"varint,7,opt,name=seqId,proto3" json:"seqId,omitempty"`                                // 來源 Sequence ID（掉包偵測/去重）
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"` // 1.0.0
+	Action        Action                 `protobuf:"varint,2,opt,name=action,proto3,enum=market.stream.v1.Action" json:"action,omitempty"`      // 完整快照/增量更新/清空
+	Bids          []*OKXBookLevel        `protobuf:"bytes,3,rep,name=bids,proto3" json:"bids,omitempty"`                                        // bids 刷新（陣列：px:qty）
+	Asks          []*OKXBookLevel        `protobuf:"bytes,4,rep,name=asks,proto3" json:"asks,omitempty"`                                        // asks 刷新（陣列：px:qty）
+	Checksum      int32                  `protobuf:"varint,5,opt,name=checksum,proto3" json:"checksum,omitempty"`                               // 交易所校驗值，確保訂單簿一致性
+	PrevSeqId     int64                  `protobuf:"varint,6,opt,name=prev_seqId,json=prevSeqId,proto3" json:"prev_seqId,omitempty"`            // 增量鏈接的上一個 seqId，協助掉包判斷
+	SeqId         uint64                 `protobuf:"varint,7,opt,name=seqId,proto3" json:"seqId,omitempty"`                                     // 來源 Sequence ID（掉包偵測/去重）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXBooksBody) Reset() {
 	*x = OKXBooksBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[5]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -527,7 +528,7 @@ func (x *OKXBooksBody) String() string {
 func (*OKXBooksBody) ProtoMessage() {}
 
 func (x *OKXBooksBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[5]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -540,14 +541,14 @@ func (x *OKXBooksBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXBooksBody.ProtoReflect.Descriptor instead.
 func (*OKXBooksBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{5}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *OKXBooksBody) GetVersion() uint32 {
+func (x *OKXBooksBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXBooksBody) GetAction() Action {
@@ -597,15 +598,15 @@ func (x *OKXBooksBody) GetSeqId() uint64 {
 // 說明: 只承載標記價格。時間用 Envelope.timestamps.event_ts_us（由原 ts ms 轉 us）。
 type OKXMarkPriceBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`       // OKXMarkPriceBody 版本號
-	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"` // 標記價格（mark price, e9）
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"` // 1.0.0
+	PxE9          int64                  `protobuf:"varint,2,opt,name=px_e9,json=pxE9,proto3" json:"px_e9,omitempty"`                           // 標記價格（mark price, e9）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXMarkPriceBody) Reset() {
 	*x = OKXMarkPriceBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[6]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -617,7 +618,7 @@ func (x *OKXMarkPriceBody) String() string {
 func (*OKXMarkPriceBody) ProtoMessage() {}
 
 func (x *OKXMarkPriceBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[6]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -630,14 +631,14 @@ func (x *OKXMarkPriceBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXMarkPriceBody.ProtoReflect.Descriptor instead.
 func (*OKXMarkPriceBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{6}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *OKXMarkPriceBody) GetVersion() uint32 {
+func (x *OKXMarkPriceBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXMarkPriceBody) GetPxE9() int64 {
@@ -652,20 +653,20 @@ func (x *OKXMarkPriceBody) GetPxE9() int64 {
 // 說明: 承載指數當前價格與 24h 統計。時間用 Envelope.timestamps.event_ts_us。
 type OKXIndexTickersBody struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                        // OKXIndexTickersBody 版本號
-	IdxPxE9       int64                  `protobuf:"varint,2,opt,name=idx_px_e9,json=idxPxE9,proto3" json:"idx_px_e9,omitempty"`       // 最新指數價格（e9）
-	High24HE9     int64                  `protobuf:"varint,3,opt,name=high24h_e9,json=high24hE9,proto3" json:"high24h_e9,omitempty"`   // 過去 24h 最高價（e9）
-	Low24HE9      int64                  `protobuf:"varint,4,opt,name=low24h_e9,json=low24hE9,proto3" json:"low24h_e9,omitempty"`      // 過去 24h 最低價（e9）
-	Open24HE9     int64                  `protobuf:"varint,5,opt,name=open24h_e9,json=open24hE9,proto3" json:"open24h_e9,omitempty"`   // 過去 24h 開盤價（e9）
-	SodUtc0E9     int64                  `protobuf:"varint,6,opt,name=sod_utc0_e9,json=sodUtc0E9,proto3" json:"sod_utc0_e9,omitempty"` // UTC0 開盤價（e9）
-	SodUtc8E9     int64                  `protobuf:"varint,7,opt,name=sod_utc8_e9,json=sodUtc8E9,proto3" json:"sod_utc8_e9,omitempty"` // UTC8 開盤價（e9）
+	SchemaVersion string                 `protobuf:"bytes,1,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"` // 1.0.0
+	IdxPxE9       int64                  `protobuf:"varint,2,opt,name=idx_px_e9,json=idxPxE9,proto3" json:"idx_px_e9,omitempty"`                // 最新指數價格（e9）
+	High24HE9     int64                  `protobuf:"varint,3,opt,name=high24h_e9,json=high24hE9,proto3" json:"high24h_e9,omitempty"`            // 過去 24h 最高價（e9）
+	Low24HE9      int64                  `protobuf:"varint,4,opt,name=low24h_e9,json=low24hE9,proto3" json:"low24h_e9,omitempty"`               // 過去 24h 最低價（e9）
+	Open24HE9     int64                  `protobuf:"varint,5,opt,name=open24h_e9,json=open24hE9,proto3" json:"open24h_e9,omitempty"`            // 過去 24h 開盤價（e9）
+	SodUtc0E9     int64                  `protobuf:"varint,6,opt,name=sod_utc0_e9,json=sodUtc0E9,proto3" json:"sod_utc0_e9,omitempty"`          // UTC0 開盤價（e9）
+	SodUtc8E9     int64                  `protobuf:"varint,7,opt,name=sod_utc8_e9,json=sodUtc8E9,proto3" json:"sod_utc8_e9,omitempty"`          // UTC8 開盤價（e9）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OKXIndexTickersBody) Reset() {
 	*x = OKXIndexTickersBody{}
-	mi := &file_market_stream_v1_proto_msgTypes[7]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -677,7 +678,7 @@ func (x *OKXIndexTickersBody) String() string {
 func (*OKXIndexTickersBody) ProtoMessage() {}
 
 func (x *OKXIndexTickersBody) ProtoReflect() protoreflect.Message {
-	mi := &file_market_stream_v1_proto_msgTypes[7]
+	mi := &file_market_stream_v1_market_stream_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -690,14 +691,14 @@ func (x *OKXIndexTickersBody) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OKXIndexTickersBody.ProtoReflect.Descriptor instead.
 func (*OKXIndexTickersBody) Descriptor() ([]byte, []int) {
-	return file_market_stream_v1_proto_rawDescGZIP(), []int{7}
+	return file_market_stream_v1_market_stream_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *OKXIndexTickersBody) GetVersion() uint32 {
+func (x *OKXIndexTickersBody) GetSchemaVersion() string {
 	if x != nil {
-		return x.Version
+		return x.SchemaVersion
 	}
-	return 0
+	return ""
 }
 
 func (x *OKXIndexTickersBody) GetIdxPxE9() int64 {
@@ -742,30 +743,30 @@ func (x *OKXIndexTickersBody) GetSodUtc8E9() int64 {
 	return 0
 }
 
-var File_market_stream_v1_proto protoreflect.FileDescriptor
+var File_market_stream_v1_market_stream_proto protoreflect.FileDescriptor
 
-const file_market_stream_v1_proto_rawDesc = "" +
+const file_market_stream_v1_market_stream_proto_rawDesc = "" +
 	"\n" +
-	"\x16market_stream_v1.proto\x12\x10market.stream.v1\"$\n" +
+	"$market/stream/v1/market_stream.proto\x12\x10market.stream.v1\"$\n" +
 	"\aRawBody\x12\x19\n" +
-	"\braw_data\x18\x01 \x01(\fR\arawData\"\xc4\x01\n" +
-	"\fOKXTradeBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12\x13\n" +
+	"\braw_data\x18\x01 \x01(\fR\arawData\"\xd1\x01\n" +
+	"\fOKXTradeBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x13\n" +
 	"\x05px_e9\x18\x02 \x01(\x03R\x04pxE9\x12\x13\n" +
 	"\x05sz_e9\x18\x03 \x01(\x03R\x04szE9\x12*\n" +
 	"\x04side\x18\x04 \x01(\x0e2\x16.market.stream.v1.SideR\x04side\x12\x14\n" +
 	"\x05count\x18\x05 \x01(\rR\x05count\x12\x14\n" +
 	"\x05seqId\x18\x06 \x01(\x04R\x05seqId\x12\x18\n" +
-	"\atradeId\x18\a \x01(\tR\atradeId\"\x9b\x01\n" +
-	"\x0fOKXAllTradeBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12\x13\n" +
+	"\atradeId\x18\a \x01(\tR\atradeId\"\xa8\x01\n" +
+	"\x0fOKXAllTradeBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x13\n" +
 	"\x05px_e9\x18\x02 \x01(\x03R\x04pxE9\x12\x13\n" +
 	"\x05sz_e9\x18\x03 \x01(\x03R\x04szE9\x12*\n" +
 	"\x04side\x18\x04 \x01(\x0e2\x16.market.stream.v1.SideR\x04side\x12\x18\n" +
-	"\atradeId\x18\x05 \x01(\tR\atradeId\"\x80\x02\n" +
+	"\atradeId\x18\x05 \x01(\tR\atradeId\"\x8d\x02\n" +
 	"\n" +
-	"OKXBBOBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12\x1a\n" +
+	"OKXBBOBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x1a\n" +
 	"\tbid_px_e9\x18\x02 \x01(\x03R\abidPxE9\x12\x1c\n" +
 	"\n" +
 	"bid_qty_e9\x18\x03 \x01(\x03R\bbidQtyE9\x12&\n" +
@@ -777,21 +778,21 @@ const file_market_stream_v1_proto_rawDesc = "" +
 	"\x05seqId\x18\b \x01(\x04R\x05seqId\":\n" +
 	"\fOKXBookLevel\x12\x13\n" +
 	"\x05px_e9\x18\x01 \x01(\x03R\x04pxE9\x12\x15\n" +
-	"\x06qty_e9\x18\x02 \x01(\x03R\x05qtyE9\"\x93\x02\n" +
-	"\fOKXBooksBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x120\n" +
+	"\x06qty_e9\x18\x02 \x01(\x03R\x05qtyE9\"\xa0\x02\n" +
+	"\fOKXBooksBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x120\n" +
 	"\x06action\x18\x02 \x01(\x0e2\x18.market.stream.v1.ActionR\x06action\x122\n" +
 	"\x04bids\x18\x03 \x03(\v2\x1e.market.stream.v1.OKXBookLevelR\x04bids\x122\n" +
 	"\x04asks\x18\x04 \x03(\v2\x1e.market.stream.v1.OKXBookLevelR\x04asks\x12\x1a\n" +
 	"\bchecksum\x18\x05 \x01(\x05R\bchecksum\x12\x1d\n" +
 	"\n" +
 	"prev_seqId\x18\x06 \x01(\x03R\tprevSeqId\x12\x14\n" +
-	"\x05seqId\x18\a \x01(\x04R\x05seqId\"A\n" +
-	"\x10OKXMarkPriceBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12\x13\n" +
-	"\x05px_e9\x18\x02 \x01(\x03R\x04pxE9\"\xe6\x01\n" +
-	"\x13OKXIndexTickersBody\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x12\x1a\n" +
+	"\x05seqId\x18\a \x01(\x04R\x05seqId\"N\n" +
+	"\x10OKXMarkPriceBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x13\n" +
+	"\x05px_e9\x18\x02 \x01(\x03R\x04pxE9\"\xf3\x01\n" +
+	"\x13OKXIndexTickersBody\x12%\n" +
+	"\x0eschema_version\x18\x01 \x01(\tR\rschemaVersion\x12\x1a\n" +
 	"\tidx_px_e9\x18\x02 \x01(\x03R\aidxPxE9\x12\x1d\n" +
 	"\n" +
 	"high24h_e9\x18\x03 \x01(\x03R\thigh24hE9\x12\x1b\n" +
@@ -809,35 +810,38 @@ const file_market_stream_v1_proto_rawDesc = "" +
 	"\x12ACTION_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fACTION_SNAPSHOT\x10\x01\x12\x11\n" +
 	"\rACTION_UPDATE\x10\x02\x12\x10\n" +
-	"\fACTION_CLEAR\x10\x03B;H\x01Z7dorma_system/schemas/go/market_stream_v1;marketstreamv1b\x06proto3"
+	"\fACTION_CLEAR\x10\x03B;H\x01Z7dorma_system/schemas/go/market/stream/v1;marketstreamv1b\x06proto3"
 
 var (
-	file_market_stream_v1_proto_rawDescOnce sync.Once
-	file_market_stream_v1_proto_rawDescData []byte
+	file_market_stream_v1_market_stream_proto_rawDescOnce sync.Once
+	file_market_stream_v1_market_stream_proto_rawDescData []byte
 )
 
-func file_market_stream_v1_proto_rawDescGZIP() []byte {
-	file_market_stream_v1_proto_rawDescOnce.Do(func() {
-		file_market_stream_v1_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_market_stream_v1_proto_rawDesc), len(file_market_stream_v1_proto_rawDesc)))
+func file_market_stream_v1_market_stream_proto_rawDescGZIP() []byte {
+	file_market_stream_v1_market_stream_proto_rawDescOnce.Do(func() {
+		file_market_stream_v1_market_stream_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_market_stream_v1_market_stream_proto_rawDesc), len(file_market_stream_v1_market_stream_proto_rawDesc)))
 	})
-	return file_market_stream_v1_proto_rawDescData
+	return file_market_stream_v1_market_stream_proto_rawDescData
 }
 
-var file_market_stream_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_market_stream_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_market_stream_v1_proto_goTypes = []any{
-	(Side)(0),                   // 0: market.stream.v1.Side
-	(Action)(0),                 // 1: market.stream.v1.Action
-	(*RawBody)(nil),             // 2: market.stream.v1.RawBody
-	(*OKXTradeBody)(nil),        // 3: market.stream.v1.OKXTradeBody
-	(*OKXAllTradeBody)(nil),     // 4: market.stream.v1.OKXAllTradeBody
-	(*OKXBBOBody)(nil),          // 5: market.stream.v1.OKXBBOBody
-	(*OKXBookLevel)(nil),        // 6: market.stream.v1.OKXBookLevel
-	(*OKXBooksBody)(nil),        // 7: market.stream.v1.OKXBooksBody
-	(*OKXMarkPriceBody)(nil),    // 8: market.stream.v1.OKXMarkPriceBody
-	(*OKXIndexTickersBody)(nil), // 9: market.stream.v1.OKXIndexTickersBody
-}
-var file_market_stream_v1_proto_depIdxs = []int32{
+var (
+	file_market_stream_v1_market_stream_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+	file_market_stream_v1_market_stream_proto_msgTypes  = make([]protoimpl.MessageInfo, 8)
+	file_market_stream_v1_market_stream_proto_goTypes   = []any{
+		(Side)(0),                   // 0: market.stream.v1.Side
+		(Action)(0),                 // 1: market.stream.v1.Action
+		(*RawBody)(nil),             // 2: market.stream.v1.RawBody
+		(*OKXTradeBody)(nil),        // 3: market.stream.v1.OKXTradeBody
+		(*OKXAllTradeBody)(nil),     // 4: market.stream.v1.OKXAllTradeBody
+		(*OKXBBOBody)(nil),          // 5: market.stream.v1.OKXBBOBody
+		(*OKXBookLevel)(nil),        // 6: market.stream.v1.OKXBookLevel
+		(*OKXBooksBody)(nil),        // 7: market.stream.v1.OKXBooksBody
+		(*OKXMarkPriceBody)(nil),    // 8: market.stream.v1.OKXMarkPriceBody
+		(*OKXIndexTickersBody)(nil), // 9: market.stream.v1.OKXIndexTickersBody
+	}
+)
+
+var file_market_stream_v1_market_stream_proto_depIdxs = []int32{
 	0, // 0: market.stream.v1.OKXTradeBody.side:type_name -> market.stream.v1.Side
 	0, // 1: market.stream.v1.OKXAllTradeBody.side:type_name -> market.stream.v1.Side
 	1, // 2: market.stream.v1.OKXBooksBody.action:type_name -> market.stream.v1.Action
@@ -850,27 +854,27 @@ var file_market_stream_v1_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_market_stream_v1_proto_init() }
-func file_market_stream_v1_proto_init() {
-	if File_market_stream_v1_proto != nil {
+func init() { file_market_stream_v1_market_stream_proto_init() }
+func file_market_stream_v1_market_stream_proto_init() {
+	if File_market_stream_v1_market_stream_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_stream_v1_proto_rawDesc), len(file_market_stream_v1_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_stream_v1_market_stream_proto_rawDesc), len(file_market_stream_v1_market_stream_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_market_stream_v1_proto_goTypes,
-		DependencyIndexes: file_market_stream_v1_proto_depIdxs,
-		EnumInfos:         file_market_stream_v1_proto_enumTypes,
-		MessageInfos:      file_market_stream_v1_proto_msgTypes,
+		GoTypes:           file_market_stream_v1_market_stream_proto_goTypes,
+		DependencyIndexes: file_market_stream_v1_market_stream_proto_depIdxs,
+		EnumInfos:         file_market_stream_v1_market_stream_proto_enumTypes,
+		MessageInfos:      file_market_stream_v1_market_stream_proto_msgTypes,
 	}.Build()
-	File_market_stream_v1_proto = out.File
-	file_market_stream_v1_proto_goTypes = nil
-	file_market_stream_v1_proto_depIdxs = nil
+	File_market_stream_v1_market_stream_proto = out.File
+	file_market_stream_v1_market_stream_proto_goTypes = nil
+	file_market_stream_v1_market_stream_proto_depIdxs = nil
 }

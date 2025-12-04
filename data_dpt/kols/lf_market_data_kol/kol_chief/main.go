@@ -65,9 +65,8 @@ func main() {
 
 	// ────────────────────── config：標的 + intervals ──────────────────────
 	canon := []string{
-		"BTC-USDT-SWAP", "ETH-USDT-SWAP", "BNB-USDT-SWAP", "XRP-USDT-SWAP",
-		"SOL-USDT-SWAP", "ADA-USDT-SWAP", "DOGE-USDT-SWAP", "MATIC-USDT-SWAP",
-		"DOT-USDT-SWAP", "LTC-USDT-SWAP",
+		"BTC-USDT-SWAP", "ETH-USDT-SWAP", "XRP-USDT-SWAP",
+		"SOL-USDT-SWAP", "ADA-USDT-SWAP", "DOGE-USDT-SWAP",
 	}
 
 	intervals := []string{

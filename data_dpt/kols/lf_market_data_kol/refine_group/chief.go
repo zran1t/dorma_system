@@ -8,8 +8,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	marketcommonv1 "dorma_system/schemas/gen/go/market_common_v1"
 	"dorma_system/infra/symbols"
+	marketcommonv1 "dorma_system/schemas/gen/go/market/common/v1"
 )
 
 type Chief struct {

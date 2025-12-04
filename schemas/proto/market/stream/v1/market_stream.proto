@@ -1,9 +1,9 @@
-syntax = "proto3";             
+syntax = "proto3";
 
 package market.stream.v1;
 
 option optimize_for = SPEED;
-option go_package = "dorma_system/schemas/go/market_stream_v1;marketstreamv1";
+option go_package = "dorma_system/schemas/go/market/stream/v1;marketstreamv1";
 
 // =======================================================
 // 風格與單位約定
@@ -20,7 +20,7 @@ option go_package = "dorma_system/schemas/go/market_stream_v1;marketstreamv1";
 
 
 // 方向（買或賣）
-enum Side {  
+enum Side {
   SIDE_UNSPECIFIED = 0; // 預設值，不使用
   SIDE_BUY         = 1; // 買入
   SIDE_SELL        = 2; // 賣出
@@ -47,13 +47,13 @@ message RawBody {
 // ======================= OKXTrade =======================
 // OKX 的成交（聚合後）資料：清洗後欄位定義
 message OKXTradeBody {
-  uint32    version   = 1; // OKXTradeBody 版本號
-  int64     px_e9     = 2; // 成交價（e9）
-  int64     sz_e9     = 3; // 成交量（e9）
-  Side      side      = 4; // BUY/SELL/UNKNOWN
-  uint32    count     = 5; // 被該 taker 吃到的 maker 數
-  uint64    seqId     = 6; // 來源 Sequence ID（掉包偵測/去重）
-  string    tradeId   = 7; // 來源交易 ID（對帳/二次去重）
+  string    schema_version   = 1; // 1.0.0
+  int64     px_e9            = 2; // 成交價（e9）
+  int64     sz_e9            = 3; // 成交量（e9）
+  Side      side             = 4; // BUY/SELL/UNKNOWN
+  uint32    count            = 5; // 被該 taker 吃到的 maker 數
+  uint64    seqId            = 6; // 來源 Sequence ID（掉包偵測/去重）
+  string    tradeId          = 7; // 來源交易 ID（對帳/二次去重）
 }
 
 
@@ -62,18 +62,18 @@ message OKXTradeBody {
 // OKX 的逐筆成交（未聚合）資料：清洗後欄位定義
 // 與 Trade 差異：AllTrades 無 count、無 seqId；每個被 take 的 maker 對應一則訊息
 message OKXAllTradeBody {
-  uint32  version = 1; // OKXAllTradeBody 版本號
-  int64   px_e9   = 2; // 成交價（e9）
-  int64   sz_e9   = 3; // 成交量（e9）
-  Side    side    = 4; // BUY/SELL/UNKNOWN
-  string  tradeId = 5; // 來源交易 ID（對帳/二次去重）
+  string  schema_version    = 1; // 1.0.0
+  int64   px_e9             = 2; // 成交價（e9）
+  int64   sz_e9             = 3; // 成交量（e9）
+  Side    side              = 4; // BUY/SELL/UNKNOWN
+  string  tradeId           = 5; // 來源交易 ID（對帳/二次去重）
 }
 
 
 // ======================= OKXBBO =======================
 // OKX 的最優買賣（BBO）：清洗後欄位定義
 message OKXBBOBody {
-  uint32    version          = 1; // OKXBBOBody 版本號
+  string    schema_version   = 1; // 1.0.0
   int64     bid_px_e9        = 2; // 最優買價（e9)
   int64     bid_qty_e9       = 3; // 最優買價數量（e9）
   uint32    bid_order_count  = 4; // 最優買價掛單數
@@ -91,32 +91,32 @@ message OKXBookLevel {
 }
 
 message OKXBooksBody {
-  uint32                version    = 1; // OKXBooksBody 版本號
-  Action                action     = 2; // 完整快照/增量更新/清空
-  repeated OKXBookLevel bids       = 3; // bids 刷新（陣列：px:qty）
-  repeated OKXBookLevel asks       = 4; // asks 刷新（陣列：px:qty）
-  int32                 checksum   = 5; // 交易所校驗值，確保訂單簿一致性
-  int64                 prev_seqId = 6; // 增量鏈接的上一個 seqId，協助掉包判斷
-  uint64                seqId      = 7; // 來源 Sequence ID（掉包偵測/去重）
+  string                schema_version    = 1; // 1.0.0
+  Action                action            = 2; // 完整快照/增量更新/清空
+  repeated OKXBookLevel bids              = 3; // bids 刷新（陣列：px:qty）
+  repeated OKXBookLevel asks              = 4; // asks 刷新（陣列：px:qty）
+  int32                 checksum          = 5; // 交易所校驗值，確保訂單簿一致性
+  int64                 prev_seqId        = 6; // 增量鏈接的上一個 seqId，協助掉包判斷
+  uint64                seqId             = 7; // 來源 Sequence ID（掉包偵測/去重）
 }
 
 // ======================= OKX Mark Price =======================
 // 來源: channel = "mark-price"
 // 說明: 只承載標記價格。時間用 Envelope.timestamps.event_ts_us（由原 ts ms 轉 us）。
 message OKXMarkPriceBody {
-  uint32 version = 1;  // OKXMarkPriceBody 版本號
-  int64  px_e9   = 2;  // 標記價格（mark price, e9）
+  string schema_version    = 1;  // 1.0.0
+  int64  px_e9             = 2;  // 標記價格（mark price, e9）
 }
 
 // ======================= OKX Index Tickers =======================
 // 來源: channel = "index-tickers"
 // 說明: 承載指數當前價格與 24h 統計。時間用 Envelope.timestamps.event_ts_us。
 message OKXIndexTickersBody {
-  uint32 version      = 1; // OKXIndexTickersBody 版本號
-  int64  idx_px_e9    = 2; // 最新指數價格（e9）
-  int64  high24h_e9   = 3; // 過去 24h 最高價（e9）
-  int64  low24h_e9    = 4; // 過去 24h 最低價（e9）
-  int64  open24h_e9   = 5; // 過去 24h 開盤價（e9）
-  int64  sod_utc0_e9  = 6; // UTC0 開盤價（e9）
-  int64  sod_utc8_e9  = 7; // UTC8 開盤價（e9）
+  string schema_version   = 1; // 1.0.0
+  int64  idx_px_e9        = 2; // 最新指數價格（e9）
+  int64  high24h_e9       = 3; // 過去 24h 最高價（e9）
+  int64  low24h_e9        = 4; // 過去 24h 最低價（e9）
+  int64  open24h_e9       = 5; // 過去 24h 開盤價（e9）
+  int64  sod_utc0_e9      = 6; // UTC0 開盤價（e9）
+  int64  sod_utc8_e9      = 7; // UTC8 開盤價（e9）
 }

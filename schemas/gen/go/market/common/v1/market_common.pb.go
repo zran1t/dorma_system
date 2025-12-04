@@ -2,17 +2,18 @@
 // versions:
 // 	protoc-gen-go v1.36.9
 // 	protoc        v6.32.0
-// source: market_common_v1.proto
+// source: market/common/v1/market_common.proto
 
 package marketcommonv1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	anypb "google.golang.org/protobuf/types/known/anypb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 const (
@@ -56,11 +57,11 @@ func (x Exchange) String() string {
 }
 
 func (Exchange) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_common_v1_proto_enumTypes[0].Descriptor()
+	return file_market_common_v1_market_common_proto_enumTypes[0].Descriptor()
 }
 
 func (Exchange) Type() protoreflect.EnumType {
-	return &file_market_common_v1_proto_enumTypes[0]
+	return &file_market_common_v1_market_common_proto_enumTypes[0]
 }
 
 func (x Exchange) Number() protoreflect.EnumNumber {
@@ -69,7 +70,7 @@ func (x Exchange) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Exchange.Descriptor instead.
 func (Exchange) EnumDescriptor() ([]byte, []int) {
-	return file_market_common_v1_proto_rawDescGZIP(), []int{0}
+	return file_market_common_v1_market_common_proto_rawDescGZIP(), []int{0}
 }
 
 // 市場類型（現貨/永續…）
@@ -109,11 +110,11 @@ func (x MarketType) String() string {
 }
 
 func (MarketType) Descriptor() protoreflect.EnumDescriptor {
-	return file_market_common_v1_proto_enumTypes[1].Descriptor()
+	return file_market_common_v1_market_common_proto_enumTypes[1].Descriptor()
 }
 
 func (MarketType) Type() protoreflect.EnumType {
-	return &file_market_common_v1_proto_enumTypes[1]
+	return &file_market_common_v1_market_common_proto_enumTypes[1]
 }
 
 func (x MarketType) Number() protoreflect.EnumNumber {
@@ -122,7 +123,7 @@ func (x MarketType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MarketType.Descriptor instead.
 func (MarketType) EnumDescriptor() ([]byte, []int) {
-	return file_market_common_v1_proto_rawDescGZIP(), []int{1}
+	return file_market_common_v1_market_common_proto_rawDescGZIP(), []int{1}
 }
 
 // 來源
@@ -138,7 +139,7 @@ type Source struct {
 
 func (x *Source) Reset() {
 	*x = Source{}
-	mi := &file_market_common_v1_proto_msgTypes[0]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +151,7 @@ func (x *Source) String() string {
 func (*Source) ProtoMessage() {}
 
 func (x *Source) ProtoReflect() protoreflect.Message {
-	mi := &file_market_common_v1_proto_msgTypes[0]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +164,7 @@ func (x *Source) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Source.ProtoReflect.Descriptor instead.
 func (*Source) Descriptor() ([]byte, []int) {
-	return file_market_common_v1_proto_rawDescGZIP(), []int{0}
+	return file_market_common_v1_market_common_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Source) GetExchange() Exchange {
@@ -208,7 +209,7 @@ type Timestamps struct {
 
 func (x *Timestamps) Reset() {
 	*x = Timestamps{}
-	mi := &file_market_common_v1_proto_msgTypes[1]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -220,7 +221,7 @@ func (x *Timestamps) String() string {
 func (*Timestamps) ProtoMessage() {}
 
 func (x *Timestamps) ProtoReflect() protoreflect.Message {
-	mi := &file_market_common_v1_proto_msgTypes[1]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -233,7 +234,7 @@ func (x *Timestamps) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Timestamps.ProtoReflect.Descriptor instead.
 func (*Timestamps) Descriptor() ([]byte, []int) {
-	return file_market_common_v1_proto_rawDescGZIP(), []int{1}
+	return file_market_common_v1_market_common_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Timestamps) GetEventTsUs() uint64 {
@@ -274,7 +275,7 @@ func (x *Timestamps) GetRefinerPubUs() uint64 {
 // 外層封包：僅承載一種資料型態
 type Envelope struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
-	Version    uint32                 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`                                                          // Envelope 版本號
+	Version    string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`                                                           // "1.0.0"
 	Source     *Source                `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`                                                             // 來源資訊
 	Symbol     string                 `protobuf:"bytes,3,opt,name=symbol,proto3" json:"symbol,omitempty"`                                                             // 系統內標準化商品代碼
 	MarketType MarketType             `protobuf:"varint,4,opt,name=market_type,json=marketType,proto3,enum=market.common.v1.MarketType" json:"market_type,omitempty"` // 市場類型（現貨/永續…）
@@ -288,7 +289,7 @@ type Envelope struct {
 
 func (x *Envelope) Reset() {
 	*x = Envelope{}
-	mi := &file_market_common_v1_proto_msgTypes[2]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -300,7 +301,7 @@ func (x *Envelope) String() string {
 func (*Envelope) ProtoMessage() {}
 
 func (x *Envelope) ProtoReflect() protoreflect.Message {
-	mi := &file_market_common_v1_proto_msgTypes[2]
+	mi := &file_market_common_v1_market_common_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -313,14 +314,14 @@ func (x *Envelope) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Envelope.ProtoReflect.Descriptor instead.
 func (*Envelope) Descriptor() ([]byte, []int) {
-	return file_market_common_v1_proto_rawDescGZIP(), []int{2}
+	return file_market_common_v1_market_common_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Envelope) GetVersion() uint32 {
+func (x *Envelope) GetVersion() string {
 	if x != nil {
 		return x.Version
 	}
-	return 0
+	return ""
 }
 
 func (x *Envelope) GetSource() *Source {
@@ -365,11 +366,11 @@ func (x *Envelope) GetBody() *anypb.Any {
 	return nil
 }
 
-var File_market_common_v1_proto protoreflect.FileDescriptor
+var File_market_common_v1_market_common_proto protoreflect.FileDescriptor
 
-const file_market_common_v1_proto_rawDesc = "" +
+const file_market_common_v1_market_common_proto_rawDesc = "" +
 	"\n" +
-	"\x16market_common_v1.proto\x12\x10market.common.v1\x1a\x19google/protobuf/any.proto\"\x97\x01\n" +
+	"$market/common/v1/market_common.proto\x12\x10market.common.v1\x1a\x19google/protobuf/any.proto\"\x97\x01\n" +
 	"\x06Source\x126\n" +
 	"\bexchange\x18\x01 \x01(\x0e2\x1a.market.common.v1.ExchangeR\bexchange\x12\x12\n" +
 	"\x04feed\x18\x02 \x01(\tR\x04feed\x12%\n" +
@@ -383,7 +384,7 @@ const file_market_common_v1_proto_rawDesc = "" +
 	"\x0frefiner_recv_us\x18\x04 \x01(\x04R\rrefinerRecvUs\x12$\n" +
 	"\x0erefiner_pub_us\x18\x05 \x01(\x04R\frefinerPubUs\"\xb4\x02\n" +
 	"\bEnvelope\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\x120\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x120\n" +
 	"\x06source\x18\x02 \x01(\v2\x18.market.common.v1.SourceR\x06source\x12\x16\n" +
 	"\x06symbol\x18\x03 \x01(\tR\x06symbol\x12=\n" +
 	"\vmarket_type\x18\x04 \x01(\x0e2\x1c.market.common.v1.MarketTypeR\n" +
@@ -403,31 +404,34 @@ const file_market_common_v1_proto_rawDesc = "" +
 	"\x17MARKET_TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vMARKET_SPOT\x10\x01\x12\x14\n" +
 	"\x10MARKET_PERPETUAL\x10\x02\x12\x10\n" +
-	"\fMARKET_INDEX\x10\x03B;H\x01Z7dorma_system/schemas/go/market_common_v1;marketcommonv1b\x06proto3"
+	"\fMARKET_INDEX\x10\x03B;H\x01Z7dorma_system/schemas/go/market/common/v1;marketcommonv1b\x06proto3"
 
 var (
-	file_market_common_v1_proto_rawDescOnce sync.Once
-	file_market_common_v1_proto_rawDescData []byte
+	file_market_common_v1_market_common_proto_rawDescOnce sync.Once
+	file_market_common_v1_market_common_proto_rawDescData []byte
 )
 
-func file_market_common_v1_proto_rawDescGZIP() []byte {
-	file_market_common_v1_proto_rawDescOnce.Do(func() {
-		file_market_common_v1_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_market_common_v1_proto_rawDesc), len(file_market_common_v1_proto_rawDesc)))
+func file_market_common_v1_market_common_proto_rawDescGZIP() []byte {
+	file_market_common_v1_market_common_proto_rawDescOnce.Do(func() {
+		file_market_common_v1_market_common_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_market_common_v1_market_common_proto_rawDesc), len(file_market_common_v1_market_common_proto_rawDesc)))
 	})
-	return file_market_common_v1_proto_rawDescData
+	return file_market_common_v1_market_common_proto_rawDescData
 }
 
-var file_market_common_v1_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_market_common_v1_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_market_common_v1_proto_goTypes = []any{
-	(Exchange)(0),      // 0: market.common.v1.Exchange
-	(MarketType)(0),    // 1: market.common.v1.MarketType
-	(*Source)(nil),     // 2: market.common.v1.Source
-	(*Timestamps)(nil), // 3: market.common.v1.Timestamps
-	(*Envelope)(nil),   // 4: market.common.v1.Envelope
-	(*anypb.Any)(nil),  // 5: google.protobuf.Any
-}
-var file_market_common_v1_proto_depIdxs = []int32{
+var (
+	file_market_common_v1_market_common_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+	file_market_common_v1_market_common_proto_msgTypes  = make([]protoimpl.MessageInfo, 3)
+	file_market_common_v1_market_common_proto_goTypes   = []any{
+		(Exchange)(0),      // 0: market.common.v1.Exchange
+		(MarketType)(0),    // 1: market.common.v1.MarketType
+		(*Source)(nil),     // 2: market.common.v1.Source
+		(*Timestamps)(nil), // 3: market.common.v1.Timestamps
+		(*Envelope)(nil),   // 4: market.common.v1.Envelope
+		(*anypb.Any)(nil),  // 5: google.protobuf.Any
+	}
+)
+
+var file_market_common_v1_market_common_proto_depIdxs = []int32{
 	0, // 0: market.common.v1.Source.exchange:type_name -> market.common.v1.Exchange
 	2, // 1: market.common.v1.Envelope.source:type_name -> market.common.v1.Source
 	1, // 2: market.common.v1.Envelope.market_type:type_name -> market.common.v1.MarketType
@@ -440,27 +444,27 @@ var file_market_common_v1_proto_depIdxs = []int32{
 	0, // [0:5] is the sub-list for field type_name
 }
 
-func init() { file_market_common_v1_proto_init() }
-func file_market_common_v1_proto_init() {
-	if File_market_common_v1_proto != nil {
+func init() { file_market_common_v1_market_common_proto_init() }
+func file_market_common_v1_market_common_proto_init() {
+	if File_market_common_v1_market_common_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_common_v1_proto_rawDesc), len(file_market_common_v1_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_market_common_v1_market_common_proto_rawDesc), len(file_market_common_v1_market_common_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_market_common_v1_proto_goTypes,
-		DependencyIndexes: file_market_common_v1_proto_depIdxs,
-		EnumInfos:         file_market_common_v1_proto_enumTypes,
-		MessageInfos:      file_market_common_v1_proto_msgTypes,
+		GoTypes:           file_market_common_v1_market_common_proto_goTypes,
+		DependencyIndexes: file_market_common_v1_market_common_proto_depIdxs,
+		EnumInfos:         file_market_common_v1_market_common_proto_enumTypes,
+		MessageInfos:      file_market_common_v1_market_common_proto_msgTypes,
 	}.Build()
-	File_market_common_v1_proto = out.File
-	file_market_common_v1_proto_goTypes = nil
-	file_market_common_v1_proto_depIdxs = nil
+	File_market_common_v1_market_common_proto = out.File
+	file_market_common_v1_market_common_proto_goTypes = nil
+	file_market_common_v1_market_common_proto_depIdxs = nil
 }

@@ -25,7 +25,7 @@
 ### 🛑 關閉全部 Redis
 
 ```bash
-./scripts/stop_all_redis.sh 
+./scripts/stop_all_redis.sh
 ```
 ---
 
@@ -224,22 +224,41 @@ source .venv/bin/activate
 
 
 
-./project_docs/update_project_tree.sh
+
+
+cd schemas
+
+protoc -I proto \
+  --go_out=paths=source_relative:gen/go \
+  --go-grpc_out=paths=source_relative:gen/go \
+  proto/market/stream/v1/market_stream.proto
+
+protoc -I proto \
+  --go_out=paths=source_relative:gen/go \
+  --go-grpc_out=paths=source_relative:gen/go \
+  proto/market/common/v1/market_common.proto
+
+protoc -I proto \
+  --go_out=paths=source_relative:gen/go \
+  --go-grpc_out=paths=source_relative:gen/go \
+  proto/market/kline/v1/market_kline.proto
+
+  revive -config revive.toml -formatter stylish ./...
 
 
 
-  protoc -I schemas \
-  --go_out=paths=source_relative:schemas/gen/go/market_stream_v1 \
-  --go-grpc_out=paths=source_relative:schemas/gen/go/market_stream_v1 \
-  schemas/market_stream_v1.proto
-
-
-  protoc -I schemas \
-  --go_out=paths=source_relative:schemas/gen/go/market_common_v1 \
-  --go-grpc_out=paths=source_relative:schemas/gen/go/market_common_v1 \
-  schemas/market_common_v1.proto
-
-  protoc -I schemas \
-  --go_out=paths=source_relative:schemas/gen/go/market_kline_v1 \
-  --go-grpc_out=paths=source_relative:schemas/gen/go/market_kline_v1 \
-  schemas/market_kline_v1.proto
+// FunctionName 函式功能一句話說明（動詞開頭）。
+// 功能:
+//   - （描述這個函式主要做什麼事，盡量簡短清楚）
+// 參數:
+//   - param1: 說明這個參數用途。
+//   - param2: 說明這個參數用途。
+// 回傳:
+//   - result: 回傳值的意義與範圍。
+//   - err: 錯誤情況下的行為（若適用）。
+// 備註:
+//   - 特殊邏輯或例外情況。
+//   - 若有外部依賴、cache、I/O 等副作用可在此說明。
+func FunctionName(param1 Type1, param2 Type2) (result Type3, err error) {
+    // ...
+}

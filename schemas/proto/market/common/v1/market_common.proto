@@ -3,7 +3,7 @@
 package market.common.v1;
 
 option optimize_for = SPEED;
-option go_package = "dorma_system/schemas/go/market_common_v1;marketcommonv1";
+option go_package = "dorma_system/schemas/go/market/common/v1;marketcommonv1";
 
 import "google/protobuf/any.proto";
 
@@ -28,7 +28,7 @@ enum Exchange {
 }
 
 // 市場類型（現貨/永續…）
-enum MarketType { 
+enum MarketType {
   MARKET_TYPE_UNSPECIFIED = 0; // 預設值，不使用
   MARKET_SPOT             = 1; // 現貨
   MARKET_PERPETUAL        = 2; // 永續合約
@@ -58,7 +58,7 @@ message Timestamps {
 
 // 外層封包：僅承載一種資料型態
 message Envelope {
-  uint32        version     = 1; // Envelope 版本號
+  string        version     = 1; // "1.0.0"
   Source        source      = 2; // 來源資訊
   string        symbol      = 3; // 系統內標準化商品代碼
   MarketType    market_type = 4; // 市場類型（現貨/永續…）

@@ -1,3 +1,10 @@
+syntax = "proto3";
+
+package market.kline.v1;
+
+option optimize_for = SPEED;
+option go_package = "dorma_system/schemas/go/market/kline/v1;marketklinev1";
+
 // =======================================================
 // market_kline_v1.proto
 //
@@ -14,12 +21,6 @@
 // • feed（Envelope.source.feed）：建議使用 "KLINE.MARKPRICE" 與 "KLINE.INDEX" 作為類型標識。
 // =======================================================
 
-syntax = "proto3";
-
-package market.kline.v1;
-
-option optimize_for = SPEED;
-option go_package = "dorma_system/schemas/go/market_kline_v1;marketklinev1";
 
 // ======================= 共用型別 =======================
 
@@ -57,7 +58,7 @@ message KLineBar {
 //   - Envelope.symbol          = canonical（例：BTC-USDT-SWAP）
 //   - Envelope.timestamps.event_ts_us = 來源事件時間（通常為 bar open ts → 轉 us）
 message OKXMarkPriceKLineBody {
-  uint32        version = 1;    // 版本號（保留擴展）
+  string            schema_version = 1;    // 1.0.0
   repeated KLineBar bars = 2;   // 支援單根或批次（初始化/回放）
 }
 
@@ -71,7 +72,7 @@ message OKXMarkPriceKLineBody {
 //   - Envelope.symbol          = canonical（例：BTC-USDT-INDEX）
 //   - Envelope.timestamps.event_ts_us = 來源事件時間（通常為 bar open ts → 轉 us）
 message OKXIndexKLineBody {
-  uint32        version = 1;    // 版本號（保留擴展）
+  string            schema_version = 1;    // 1.0.0
   repeated KLineBar bars = 2;   // 支援單根或批次（初始化/回放）
 }
 

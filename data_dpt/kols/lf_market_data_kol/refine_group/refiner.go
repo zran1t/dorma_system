@@ -12,10 +12,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
-	marketcommonv1 "dorma_system/schemas/gen/go/market_common_v1"
-	marketstreamv1 "dorma_system/schemas/gen/go/market_stream_v1"
-	marketklinev1 "dorma_system/schemas/gen/go/market_kline_v1"
 	"dorma_system/infra/symbols"
+	marketcommonv1 "dorma_system/schemas/gen/go/market/common/v1"
+	marketklinev1 "dorma_system/schemas/gen/go/market/kline/v1"
+	marketstreamv1 "dorma_system/schemas/gen/go/market/stream/v1"
 )
 
 // ────────────────────────── Refiner ──────────────────────────

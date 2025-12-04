@@ -1,0 +1,23 @@
+repos:
+  # 基本清潔（空白、換行、避免 conflict）
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+
+  # 本機工具：gofumpt + revive
+  - repo: local
+    hooks:
+      - id: gofumpt
+        name: gofumpt
+        entry: gofumpt -l -w .
+        language: system
+        types_or: [go]
+
+      - id: revive
+        name: revive
+        entry: revive -config revive.toml -formatter stylish ./...
+        language: system
+        pass_filenames: false

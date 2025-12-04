@@ -3,10 +3,6 @@
 ├── .gitignore
 ├── .python-version
 ├── README.md
-├── capital_dpt
-│   ├── dpt_comm_room
-│   └── dpt_dispatcher_room
-├── cmd
 ├── common
 │   ├── __init__.py
 │   ├── __pycache__
@@ -18,7 +14,10 @@
 │   ├── nats_comm.py
 │   └── subject_resolver.py
 ├── configs
+│   ├── addressbook
+│   │   └── comm_rooms.yaml
 │   ├── channels
+│   │   ├── data.yaml
 │   │   ├── initialization.yaml
 │   │   ├── inter.yaml
 │   │   └── market.yaml
@@ -30,9 +29,11 @@
 │   │   ├── redis_order_pool.conf
 │   │   ├── redis_position_pool.conf
 │   │   └── redis_strategy_pool.conf
-│   └── symbol_mapping
-│       ├── binance.yaml
-│       └── okx.yaml
+│   ├── symbol_mapping
+│   │   ├── binance.yaml
+│   │   └── okx.yaml
+│   └── system_presets
+│       └── startup_matrix.yaml
 ├── data_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
@@ -71,7 +72,7 @@
 │       │   ├── collect_group
 │       │   │   ├── chief.go
 │       │   │   ├── collector.go
-│       │   │   └── exchange
+│       │   │   └── exchanges
 │       │   │       ├── binance
 │       │   │       │   └── adapter.go
 │       │   │       └── okx
@@ -79,8 +80,16 @@
 │       │   ├── kol_chief
 │       │   │   └── main.go
 │       │   ├── kol_comm_room
-│       │   ├── kol_dispatch_room
 │       │   └── refine_group
+│       │       ├── chief.go
+│       │       ├── exchanges
+│       │       │   ├── binance
+│       │       │   └── okx
+│       │       │       ├── adapter.go
+│       │       │       └── types.go
+│       │       ├── kol_dispatch_room
+│       │       ├── refiner.go
+│       │       └── types.go
 │       └── ref_data_kol
 │           ├── kol_chief
 │           ├── kol_comm_room
@@ -88,6 +97,9 @@
 ├── go.mod
 ├── go.sum
 ├── infra
+│   ├── preset
+│   │   ├── loader.go
+│   │   └── types.go
 │   ├── pubsub
 │   │   ├── bus.go
 │   │   └── nats_core.go
@@ -222,6 +234,7 @@
 │                   │   ├── 1.blk
 │                   │   └── index.db
 │                   └── obs
+├── observability_dpt
 ├── place_orders_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
@@ -229,11 +242,12 @@
 ├── project_docs
 │   ├── AI_VERSION_GUARD.txt
 │   ├── Info.txt
-│   ├── Market_Stream_Subjects_Spec_(OKX).md
 │   ├── PROJECT_TREE.txt
 │   ├── SERVER_VERSION.txt
-│   ├── proto_rules.md
-│   └── 技術架構圖 
+│   ├── intro
+│   │   ├── hf_market_data_kol.md
+│   │   └── lf_market_data_kol.md
+│   └── 技術架構圖
 │       ├── v1.0.drawio
 │       ├── v2.0.drawio
 │       ├── v2.1.drawio
@@ -255,26 +269,52 @@
 ├── requirements-dev.txt
 ├── requirements.in
 ├── requirements.txt
+├── revive.toml
 ├── risk_dpt
-│   ├── comm_room
-│   ├── dispatch_room
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
 │   └── kols
 │       ├── capital_kol
 │       ├── pre_trade_kol
 │       └── system_risk_kol
 ├── schemas
+│   ├── disable
+│   │   ├── message_protocol_v1.json
+│   │   ├── message_protocol_v1.md
+│   │   └── symbol_schema.json
 │   ├── gen
-│   │   └── go
-│   │       ├── market_common_v1
-│   │       │   └── market_common_v1.pb.go
-│   │       └── market_stream_v1
-│   │           └── market_stream_v1.pb.go
-│   ├── market_common_v1.proto
-│   ├── market_kline_v1.proto
-│   ├── market_stream_v1.proto
-│   ├── message_protocol_v1.json
-│   ├── message_protocol_v1.md
-│   └── symbol_schema.json
+│   │   ├── go
+│   │   │   ├── envelope
+│   │   │   │   └── v1
+│   │   │   └── market
+│   │   │       ├── common
+│   │   │       │   └── v1
+│   │   │       │       └── market_common.pb.go
+│   │   │       ├── kline
+│   │   │       │   └── v1
+│   │   │       │       └── market_kline.pb.go
+│   │   │       └── stream
+│   │   │           └── v1
+│   │   │               └── market_stream.pb.go
+│   │   └── rust
+│   └── proto
+│       ├── envelope
+│       │   ├── CHANGELOG.md
+│       │   └── v1
+│       │       └── envelope.proto
+│       └── market
+│           ├── common
+│           │   ├── CHANGELOG.md
+│           │   └── v1
+│           │       └── market_common.proto
+│           ├── kline
+│           │   ├── CHANGELOG.md
+│           │   └── v1
+│           │       └── market_kline.proto
+│           └── stream
+│               ├── CHANGELOG.md
+│               └── v1
+│                   └── market_stream.proto
 ├── scripts
 │   ├── nats_start_all.sh
 │   ├── nats_status_check.sh
@@ -289,12 +329,12 @@
 │   ├── dispatch_room
 │   └── kols
 ├── strategy_dpt
-│   ├── comm_room
-│   ├── dispatch_room
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
 │   └── kols
 ├── tests
 │   ├── conftest.py
-│   ├── sniff
+│   ├── lf_hf_market_data_sniffer
 │   │   └── main.go
 │   ├── test_channel_loader.py
 │   ├── test_js_bootstrap.py
@@ -303,6 +343,7 @@
 │   └── test_tools_bootstrap_3steps.py
 └── tools
     ├── __pycache__
+    ├── checkdoc.go
     └── runtime_bootstrap.py
 
-146 directories, 160 files
+169 directories, 178 files

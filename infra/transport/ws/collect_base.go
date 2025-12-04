@@ -1,37 +1,104 @@
+// File: infra/transport/ws/collect_base.go
+// Package: ws
+//
+// 職責 (Responsibility):
+//     定義 Collector 與其設定，用來統一管理「WS 訂閱 → 解析 → 發佈」的資料收集流程。
+//     將「連線細節 (WSClient)」與「交易所協定 (Adapter)」與「發佈介面 (Bus)」組裝在一起。
+//
+// 注意事項 (Notes):
+//     - Collector 本身不理解業務，只負責流程與錯誤處理、重連與心跳。
+//     - 心跳策略優先使用 Adapter 的 Heartbeat 設定，其次才是 CollectorConfig.PingEvery。
+//     - ReconnectBackoff 為整個重連與重新訂閱流程的間隔時間。
+
 package ws
 
 import (
+	// === 標準函式庫 (Standard Library) ===
 	"context"
-	"dorma_system/infra/pubsub"
 	"log"
 	"net/http"
 	"time"
+
+	// === 第三方套件 (Third-Party Libraries) ===
+	// 無
+
+	// === 系統內模組 (Internal Modules) ===
+	"dorma_system/infra/pubsub"
 )
 
+// CollectorConfig 為 Collector 的靜態設定。
+//
+// 功能:
+//   - 承載連線 URL、HTTP Header、要訂閱的 channels/symbols，以及心跳與重連相關設定。
+//
+// 欄位說明:
+//   - URL:              WebSocket 端點網址。
+//   - Headers:          建立連線時附帶的 HTTP Header（如 API key, token 等）。
+//   - Channels:         要訂閱的頻道名稱列表（由 Adapter 解讀）。
+//   - Symbols:          要訂閱的標的物清單（由 Adapter 解讀）。
+//   - PingEvery:        若 Adapter 未提供 heartbeat 間隔，則使用此值作為預設 ping 週期；為 0 則不啟用。
+//   - ReconnectBackoff: 當收訊失敗並關閉連線後，等待多少時間再發動重連；若小於等於 0 則會在建構時套用預設值。
+//
+// 契約 / 限制:
+//   - URL 必須為合法 WS URL，否則 Connect 會直接失敗。
+//   - Channels 與 Symbols 的具體語意由 Adapter 負責解釋。
+//   - ReconnectBackoff 不建議設為過小，避免頻繁重試打爆對端。
+//
+// 備註:
+//   - 若未提供 PingEvery，且 Adapter 也不要求 Heartbeat，則 Collector 不會主動送 ping。
 type CollectorConfig struct {
-	URL              string        // ws 端點網址
-	Headers          http.Header   // 連線的header 放token之類的 身份驗證
-	Channels         []string      // 資料頻道
-	Symbols          []string      // 標的物
-	PingEvery        time.Duration // Ping的間隔
-	ReconnectBackoff time.Duration // 斷線重連間隔
+	URL              string
+	Headers          http.Header
+	Channels         []string
+	Symbols          []string
+	PingEvery        time.Duration
+	ReconnectBackoff time.Duration
 }
 
-type Collector struct {
-	ws   WSClient 			// Connect,SendJSON,Recv,Close WS的抽象基底層 連線 發送訊息 接收訊息 關閉連線
-	adj  Adapter			// BuildSubscribeMsgs,Heartbeat,Handle 交易所抽象基底層 構建訂閱封包 心跳 接收回傳
-	pub  pubsub.Bus	// Publisher 推送nats
-	conf CollectorConfig	// Collector 設定
-} 
-
-// NewCollector 建立一個 Collector 實例
-// - ws:   WebSocket 客戶端（例如 GorillaWS 實作 WSClient 介面）
-// - adj:  Adapter，決定交易所的訂閱封包/心跳/解析邏輯
-// - pub:  Publisher，決定資料要送去哪裡（例如 NATS）
-// - conf: CollectorConfig，基本設定（URL、頻道、symbols 等）
+// Collector 負責整合 WSClient、Adapter 與 pubsub.Bus 的收集流程。
 //
-// 如果沒有特別設定 ReconnectBackoff，預設為 3 秒。
-// 回傳的 Collector 實例可以用 Connect/Subscribe/Run 來跑收集流程。
+// 功能:
+//   - 使用 WSClient 建立與維護 WebSocket 連線。
+//   - 透過 Adapter 建構訂閱封包、心跳訊息與資料解析。
+//   - 將解析完成的資料發佈到 pubsub.Bus。
+//
+// 欄位說明:
+//   - ws:   實際的 WebSocket 客戶端實作（例如 GorillaWS），必須實作 WSClient 介面。
+//   - adj:  交易所 Adapter，負責協定細節（訂閱格式、心跳、訊息解析）。
+//   - pub:  發佈介面（例如 NATS Bus），負責將處理好的資料送到內部總線。
+//   - conf: Collector 行為設定（端點、訂閱標的、心跳、重連策略）。
+//
+// 契約 / 限制:
+//   - Collector 本身不保證消息一定不丟，只在錯誤時盡量重連與重新訂閱。
+//   - Run 須由上層控制生命週期（ctx.Done），否則會持續阻塞在 Recv 。
+//
+// 備註:
+//   - 適合作為「交易所資料收集器」的基底元件，具體策略由 Adapter 決定。
+type Collector struct {
+	ws   WSClient
+	adj  Adapter
+	pub  pubsub.Bus
+	conf CollectorConfig
+}
+
+// NewCollector 建立 Collector 實例。
+//
+// 功能:
+//   - 接收 WSClient、Adapter、Bus 與 Config，組合成一個 Collector。
+//   - 若 ReconnectBackoff 未設定或為非正值，會套用預設 3 秒。
+//
+// 參數:
+//   - ws:   具體 WebSocket 客戶端實作。
+//   - adj:  具體交易所 Adapter 實作。
+//   - pub:  發佈資料用的 Bus 實作。
+//   - conf: Collector 的靜態設定。
+//
+// 回傳:
+//   - *Collector: 建構完成的 Collector 實例。
+//   - 無 error。
+//
+// 備註:
+//   - 建構後仍需呼叫 Connect 與 Subscribe 再進行 Run。
 func NewCollector(ws WSClient, adj Adapter, pub pubsub.Bus, conf CollectorConfig) *Collector {
 	if conf.ReconnectBackoff <= 0 {
 		conf.ReconnectBackoff = 3 * time.Second
@@ -39,89 +106,138 @@ func NewCollector(ws WSClient, adj Adapter, pub pubsub.Bus, conf CollectorConfig
 	return &Collector{ws: ws, adj: adj, pub: pub, conf: conf}
 }
 
-// 呼叫抽象基底層與ws端點建立連線
+// Connect 使用 WSClient 與設定中的 URL/Headers 建立連線。
+//
+// 功能:
+//   - 呼叫 WSClient.Connect 與指定的 WS 端點建立連線。
+//
+// 參數:
+//   - ctx: 上層控制連線動作的 context（可用於逾時或取消）。
+//
+// 回傳:
+//   - error: 若連線建立失敗則回傳錯誤，成功時為 nil。
+//
+// 備註:
+//   - 此函式不會自動訂閱頻道，僅負責建立連線。
 func (c *Collector) Connect(ctx context.Context) error {
 	return c.ws.Connect(ctx, c.conf.URL, c.conf.Headers)
 }
 
-// 訂閱ws頻道也就是傳入訂閱封包
-// 內容用到BuildSubscribeMsgs 建立訂閱封包的介面規範
+// Subscribe 傳送訂閱封包到 WebSocket 伺服器。
+//
+// 功能:
+//   - 使用 Adapter.BuildSubscribeMsgs 根據 Channels/Symbols 組合出訂閱訊息。
+//   - 逐條透過 WSClient.SendJSON 發送訂閱封包。
+//   - 透過短暫 Sleep 做輕量節流，避免一次送太多封包壓爆對端。
+//
+// 參數:
+//   - ctx: 上層控制訂閱行為的 context。
+//
+// 回傳:
+//   - error: 若組訂閱封包失敗或任一 SendJSON 出錯，則回傳錯誤；全部成功時為 nil。
+//
+// 備註:
+//   - 若未來需要更精細的節流策略，可以在這裡再包一層 rate limiter。
 func (c *Collector) Subscribe(ctx context.Context) error {
 	msgs, err := c.adj.BuildSubscribeMsgs(c.conf.Channels, c.conf.Symbols)
 	if err != nil {
 		return err
 	}
-	for _, m := range msgs { // 一個一個封包取出
-		if err := c.ws.SendJSON(ctx, m); err != nil { // 一個一個傳送訂閱 
+	for _, m := range msgs {
+		if err := c.ws.SendJSON(ctx, m); err != nil {
 			return err
 		}
-		time.Sleep(20 * time.Millisecond) // 輕節流
+		// 避免一次性大量送出訂閱封包造成壓力，做輕量節流。
+		time.Sleep(20 * time.Millisecond)
 	}
 	return nil
 }
 
+// Run 啟動 Collector 主循環，處理心跳、收訊、重連與發佈。
+//
+// 功能:
+//   - 根據 Adapter / Config 決定是否定期送出 ping 或 heartbeat payload。
+//   - 持續從 WSClient.Recv 取得訊息，交給 Adapter 解析，再用 Bus.Publish 發佈。
+//   - 當 Recv 發生錯誤時，會關閉連線、等待 backoff，然後嘗試重連與重新訂閱。
+//   - 若 ctx 被取消（ctx.Done 收到訊號），則優雅結束主循環。
+//
+// 參數:
+//   - ctx: 控制 Collector 整體生命週期的 context。
+//
+// 回傳:
+//   - error: 正常結束時為 nil；目前實作中重連/解析錯誤都不會直接向上 bubble，除非上層取消 ctx。
+//
+// 備註:
+//   - 重連與重訂閱失敗時不會立刻返回錯誤，而是留給下一輪循環繼續嘗試。
+//   - msgType 僅處理 TextMessage（值為 1），其他型別目前會被忽略。
 func (c *Collector) Run(ctx context.Context) error {
-	// 心跳
+	// 決定心跳 payload 與間隔：優先採用 Adapter 的設定，沒有再用 config 裡的 PingEvery。
 	hbPayload, hbEvery := c.adj.Heartbeat()
-	if hbEvery == 0 && c.conf.PingEvery > 0 { // 交易所不需要主動ping 就用設定裡的PingEvery
+	if hbEvery == 0 && c.conf.PingEvery > 0 {
 		hbEvery = c.conf.PingEvery
 	}
+
 	var hbTicker *time.Ticker
-	if hbEvery > 0 {  // 交易所有規定要主動ping
-		hbTicker = time.NewTicker(hbEvery) // 設定每隔hbEvery就滴答一次
+	if hbEvery > 0 {
+		hbTicker = time.NewTicker(hbEvery)
 		defer hbTicker.Stop()
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
+			// 上層要求結束，乾淨退出主循環。
 			return nil
-		default: // 如果還收到生命週期 Done 就會走到 default 下面是空的 這是為了不讓他卡死保護
+		default:
+			// 保留 default 分支，避免 select 在沒有事件時完全阻塞心跳與 Recv 邏輯。
 		}
 
-		// 非阻塞心跳
-		if hbTicker != nil { // 若有心跳（這裡理論上一定有）
+		// 非阻塞心跳：到點才送 ping / 心跳封包，沒到點就直接略過。
+		if hbTicker != nil {
 			select {
-			case <-hbTicker.C: // 讀ticker是否剛好到點 到的話就執行下方 送出心跳
+			case <-hbTicker.C:
 				if hbPayload != "" {
 					_ = c.ws.SendJSON(ctx, hbPayload)
 				} else {
 					_ = c.ws.SendPing(ctx)
 				}
-			default: // 偵測ticker計時器沒到就會進空的default避免卡死
+			default:
+				// 還沒到時間就先不動，讓主循環繼續往下跑 Recv。
 			}
 		}
 
-		msgType, data, err := c.ws.Recv(ctx) // 阻塞住整個迴圈等待接收到訊息往下走
-
-		if err != nil { // 若出現錯誤訊息
+		// 阻塞等待下一則 WS 訊息。
+		msgType, data, err := c.ws.Recv(ctx)
+		if err != nil {
 			log.Printf("[collector] 接收訊息錯誤: %v -> 重新連線中...", err)
-			_ = c.ws.Close() // 先關閉連線 確保無殘留
+			_ = c.ws.Close() // 先關閉舊連線，避免殘留狀態。
+
+			// 在重連前等待一段 backoff 時間，途中若 ctx 被取消就直接結束。
 			select {
-			case <-time.After(c.conf.ReconnectBackoff): // 等待設定的重新連線時間 繼續往下走
-			case <-ctx.Done(): // 若偵測到是主動結束 就直結return出去停止回圈
+			case <-time.After(c.conf.ReconnectBackoff):
+			case <-ctx.Done():
 				return nil
 			}
-			// 重新連線間隔到了後執行連線和訂閱 若還是出錯 就不阻塞直接continue跳出本輪迴圈 重新嘗試一次
+
+			// 嘗試重連與重新訂閱，失敗就下一輪再試，不直接中止整個 Collector。
 			if err := c.Connect(ctx); err != nil {
 				continue
 			}
 			if err := c.Subscribe(ctx); err != nil {
 				continue
 			}
-			continue // 若兩個動作都成功一樣跳到下一輪迴圈 去接收訊息 
+			continue
 		}
 
-		// 正常情況下會走到這裡：處理收到的 WS 訊息
-		if msgType == 1 /* websocket.TextMessage */ { // 1=Text frame（通常是 JSON）
-			// 交給交易所 Adapter 做解析/路由
-			// 回傳：subject（要發佈到哪個題目）、body（發佈的 payload）
+		// 正常情況下會走到這裡：處理收到的 WS 訊息。
+		if msgType == 1 /* websocket.TextMessage */ {
+			// 交給交易所 Adapter 做解析與路由決策。
 			subject, body, err := c.adj.Handle(data)
 			if err != nil {
 				log.Printf("[collector] 處理訊息錯誤: %v", err)
-				continue // 單包丟棄，主循環續跑
+				continue
 			}
-			// 有主題且有內容才發佈
+			// 有主題且有內容才發佈，避免發送空包。
 			if subject != "" && len(body) > 0 {
 				if err := c.pub.Publish(ctx, subject, body); err != nil {
 					log.Printf("[collector] 發佈失敗: %v", err)
@@ -131,5 +247,19 @@ func (c *Collector) Run(ctx context.Context) error {
 	}
 }
 
-// 對抽象基底層Clos的二次封裝
-func (c *Collector) Close() error { return c.ws.Close() }
+// Close 關閉底層 WSClient 的連線。
+//
+// 功能:
+//   - 封裝 WSClient.Close，釋放 Collector 所使用的 WebSocket 連線資源。
+//
+// 參數:
+//   - 無。
+//
+// 回傳:
+//   - error: 若 WSClient.Close 發生錯誤則回傳，成功或已關閉時為 nil。
+//
+// 備註:
+//   - 僅關閉 WS 連線，並不會關閉 pubsub.Bus 或做其他清理。
+func (c *Collector) Close() error {
+	return c.ws.Close()
+}
