@@ -15,6 +15,7 @@ repos:
         entry: gofumpt -l -w .
         language: system
         types_or: [go]
+        exclude: ^schemas/gen/
 
       - id: revive
         name: revive
