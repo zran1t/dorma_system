@@ -119,7 +119,7 @@ index:
   - spot：`-SPOT`
   - perp：`-SWAP`
   - index：`-INDEX`
-- value 是該交易所的原生 symbol（native symbol）
+- value 是該交易所的原生 symbol（native symbol，**不可為空字串**）
 - loader 只做 suffix 檢查與 YAML 解析，不做更高層業務驗證
 
 ---
@@ -133,7 +133,7 @@ index:
 
 如果呼叫 `LoadFromDefaultYAML("someExchange")` 且沒有內建路徑，會退回：
 
-- `config/symbol_mapping/<exchange>.yaml`
+- `configs/symbol_mapping/<exchange>.yaml`
 
 ---
 
@@ -177,7 +177,9 @@ spot:
 `)
 
 if err := r.applyExchangeYAML("okx", data); err != nil {
-    // applyExchangeYAML 是內部方法：通常只在 package 內（含測試）用
+    // applyExchangeYAML 為內部方法：
+    // 僅建議在 symbols package 內（或測試）使用，
+    // 上層服務請使用 LoadFromDefaultYAML 或自行包裝 loader。
 }
 
 native, _ := r.CanonicalToNative("BTC-USDT-SPOT", "okx")
@@ -207,6 +209,7 @@ native, _ := r.CanonicalToNative("BTC-USDT-SPOT", "okx")
 - 一旦遇到第一筆錯誤，會中止並回傳：
   - `out`（已成功解析的部分結果）
   - `err`
+- 此設計讓呼叫端能自行決定是否忽略錯誤、重試、或回退整批結果。
 
 這點在 resolver 註解與測試中都有明確覆蓋。
 

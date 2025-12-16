@@ -168,3 +168,29 @@ func TestLoadFromDefaultYAML_UsingRealConfigs(t *testing.T) {
 		t.Fatalf("LoadFromDefaultYAML 執行後，inMemoryResolver.store 不應該是空的")
 	}
 }
+
+func TestApplyExchangeYAML_EmptyExchange(t *testing.T) {
+	r := NewInMemoryResolver()
+
+	data := []byte(`
+spot:
+  BTC-USDT-SPOT: BTC-USDT
+`)
+
+	if err := r.applyExchangeYAML("   ", data); err == nil {
+		t.Fatalf("exchange 為空時，applyExchangeYAML 應該回傳錯誤")
+	}
+}
+
+func TestApplyExchangeYAML_EmptyNativeSymbol(t *testing.T) {
+	r := NewInMemoryResolver()
+
+	data := []byte(`
+spot:
+  BTC-USDT-SPOT: ""
+`)
+
+	if err := r.applyExchangeYAML("okx", data); err == nil {
+		t.Fatalf("native symbol 為空時，applyExchangeYAML 應該回傳錯誤")
+	}
+}

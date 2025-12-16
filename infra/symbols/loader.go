@@ -51,6 +51,7 @@ type perExchangeYAML struct {
 // 功能:
 //   - 將 YAML bytes 解析為 perExchangeYAML 結構。
 //   - 檢查 key 是否符合預期後綴（-SPOT / -SWAP / -INDEX）。
+//   - 驗證 exchange 與 native symbol 不為空。
 //   - 逐一呼叫 register 將 canonical → native 對應寫入 inMemoryResolver。
 //
 // 參數:
@@ -58,37 +59,53 @@ type perExchangeYAML struct {
 //   - data:     YAML 檔案的原始內容（byte slice）。
 //
 // 回傳:
-//   - error: 若 YAML 解析失敗、或 key 未帶正確後綴，則回傳錯誤；成功時為 nil。
+//   - error: 若 YAML 解析失敗、exchange 為空、
+//     key 未帶正確後綴、或 native symbol 為空，則回傳錯誤；成功時為 nil。
 //
 // 備註:
 //   - canonical key 會被以原樣（但經過 TrimSpace/ToUpper）寫入 store。
 //   - 若 YAML 中出現不符合規範的 key，整體載入會失敗。
 func (r *inMemoryResolver) applyExchangeYAML(exchange string, data []byte) error {
 	ex := strings.ToLower(strings.TrimSpace(exchange))
+	if ex == "" {
+		return fmt.Errorf("exchange must not be empty")
+	}
 
 	var cfg perExchangeYAML
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return err
+		return fmt.Errorf("unmarshal yaml exchange=%s: %w", ex, err)
 	}
 
 	for canon, native := range cfg.Spot {
 		if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SPOT") {
-			return fmt.Errorf("yaml mismatch: %s not suffixed with -SPOT", canon)
+			return fmt.Errorf("yaml mismatch (spot): %s not suffixed with -SPOT", canon)
+		}
+		if strings.TrimSpace(native) == "" {
+			return fmt.Errorf("yaml invalid (spot): native symbol empty for %s", canon)
 		}
 		r.register(canon, ex, native)
 	}
+
 	for canon, native := range cfg.Perp {
 		if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-SWAP") {
-			return fmt.Errorf("yaml mismatch: %s not suffixed with -SWAP", canon)
+			return fmt.Errorf("yaml mismatch (perp): %s not suffixed with -SWAP", canon)
+		}
+		if strings.TrimSpace(native) == "" {
+			return fmt.Errorf("yaml invalid (perp): native symbol empty for %s", canon)
 		}
 		r.register(canon, ex, native)
 	}
+
 	for canon, native := range cfg.Index {
 		if !strings.HasSuffix(strings.ToUpper(strings.TrimSpace(canon)), "-INDEX") {
-			return fmt.Errorf("yaml mismatch: %s not suffixed with -INDEX", canon)
+			return fmt.Errorf("yaml mismatch (index): %s not suffixed with -INDEX", canon)
+		}
+		if strings.TrimSpace(native) == "" {
+			return fmt.Errorf("yaml invalid (index): native symbol empty for %s", canon)
 		}
 		r.register(canon, ex, native)
 	}
+
 	return nil
 }
 
@@ -125,7 +142,7 @@ func (r *inMemoryResolver) LoadFromDefaultYAML(exchanges ...string) error {
 				targets[exLow] = p
 			} else {
 				// 若呼叫端未事先設定路徑，退回到預設 config 目錄
-				targets[exLow] = filepath.FromSlash(filepath.Join("config/symbol_mapping", exLow+".yaml"))
+				targets[exLow] = filepath.FromSlash(filepath.Join("configs/symbol_mapping", exLow+".yaml"))
 			}
 		}
 	}
