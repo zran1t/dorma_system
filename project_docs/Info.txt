@@ -1,5 +1,3 @@
-Project:
-https://chatgpt.com/g/g-p-68bad409f0188191b755acfbc3ea57be-liang-hua-jiao-yi-kai-fa-luo-di-v2-shi-yong-zhong/project
 
 Command(refresh Project Tree):
 tree -a -I 'pycache|.git|.DS_Store|.venv|.pytest_cache|*.pyc' > project_docs/PROJECT_TREE.txt

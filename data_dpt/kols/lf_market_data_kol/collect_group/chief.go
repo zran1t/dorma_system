@@ -152,7 +152,7 @@ func (c *Chief) StartMany(ctx context.Context, exchange, baseFeed string, interv
 	}
 
 	// 3) canonical → native instId
-	exSymbols, err := c.resolver.ResolveMany(syms, ex)
+	exSymbols, err := c.resolver.BatchCanonicalToNative(syms, ex)
 	if err != nil {
 		return fmt.Errorf("resolve symbols for %s: %w", ex, err)
 	}

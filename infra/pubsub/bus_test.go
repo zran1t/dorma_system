@@ -59,7 +59,8 @@ func TestHandler_Signature_CompileTimeCheck(t *testing.T) {
 //
 // 說明:
 //   - 這裡不檢查具體預設值（那是 NewNATSCoreBus 的責任）。
-//   - 只要能建立 BusOptions 並傳給 NewNATSCoreBus 就表示欄位設計上沒有奇怪的必填陷阱。
+//   - 本測試僅確認：BusOptions 的零值/新增欄位不會造成編譯期必填壓力。
+//   - 不呼叫 NewNATSCoreBus，避免測試依賴外部 NATS server。
 func TestBusOptions_ZeroValue_IsAccepted(t *testing.T) {
 	opts := BusOptions{
 		// 全部空值，交給 NewNATSCoreBus 做補值。

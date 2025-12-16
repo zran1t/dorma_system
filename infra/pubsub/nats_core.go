@@ -195,12 +195,29 @@ func (b *NATSCoreBus) Subscribe(ctx context.Context, subject string, h Handler, 
 	}
 
 	wrap := func(m *nats.Msg) {
-		_ = h(ctx, &Message{
+		// 每一筆訊息派生獨立 ctx（可選 timeout），避免整條訂閱共用同一個 ctx。
+		// 注意：ctx 只是「取消/逾時訊號」，不會強制中止 handler；
+		//       handler 內部的 I/O / queue / lock 必須自行尊重 ctx.Done() 才會真的中止。
+		msgCtx := ctx
+		var cancel context.CancelFunc
+		if b.opts.HandlerTimeout > 0 {
+			msgCtx, cancel = context.WithTimeout(ctx, b.opts.HandlerTimeout)
+			defer cancel()
+		}
+
+		err := h(msgCtx, &Message{
 			Subject:    m.Subject,
 			Data:       m.Data,
 			Header:     nil,
 			ReceivedAt: time.Now(),
 		})
+		if err != nil {
+			// 訂閱 handler 的 error 發生在 NATS callback（非同步）中，
+			// 無法透過 Subscribe 的 return 往上拋，故透過 BusOptions.OnHandlerError 回報。
+			if b.opts.OnHandlerError != nil {
+				b.opts.OnHandlerError(msgCtx, m.Subject, err)
+			}
+		}
 	}
 
 	var (
@@ -217,14 +234,19 @@ func (b *NATSCoreBus) Subscribe(ctx context.Context, subject string, h Handler, 
 	}
 
 	// Flush 一次，讓訂閱盡快生效並暴露錯誤（若有）
-	_ = b.nc.Flush()
+	if err := b.nc.Flush(); err != nil {
+		_ = sub.Unsubscribe() // 避免留下半套訂閱
+		return nil, err
+	}
+
 	return &natsCoreSub{sub: sub}, nil
 }
 
 // Close 關閉 NATSCoreBus 持有的連線。
 //
 // 功能:
-//   - 若連線存在且未關閉，則呼叫 nats.Conn.Close 釋放資源。
+//   - 立即關閉底層 NATS 連線，不等待訂閱 handler 完成。
+//   - 用於異常中止或不可恢復錯誤情境。
 //
 // 參數:
 //   - 無。
@@ -233,7 +255,11 @@ func (b *NATSCoreBus) Subscribe(ctx context.Context, subject string, h Handler, 
 //   - 無。
 //
 // 備註:
-//   - 多次呼叫 Close 是安全的；若連線已經關閉或為 nil，將不做任何事。
+//   - 多次呼叫是安全的。
+//   - 呼叫後將不再接收新的訊息；
+//     但已在執行中的 handler 可能仍會跑完（視 NATS client 當下狀態而定）。
+//   - Close 不會自動呼叫 Subscription.Drain()；
+//     若需要優雅關閉，請由上層先管理訂閱生命週期。
 func (b *NATSCoreBus) Close() {
 	if b.nc != nil && !b.nc.IsClosed() {
 		b.nc.Close()

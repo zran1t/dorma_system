@@ -50,7 +50,7 @@ func main() {
 	log.Printf("NATS connected (collect): %s", nurl)
 
 	res := symbols.NewInMemoryResolver()
-	if err := res.LoadDefaultsFromDisk(); err != nil {
+	if err := res.LoadFromDefaultYAML(); err != nil {
 		log.Fatalf("load symbol mappings failed: %v", err)
 	}
 

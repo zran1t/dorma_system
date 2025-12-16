@@ -70,7 +70,7 @@ func handleAnyCandle(env *marketcommonv1.Envelope, res symbols.Resolver, isMark 
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 

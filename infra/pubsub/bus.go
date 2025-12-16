@@ -94,7 +94,7 @@ type Subscription interface {
 //   - MaxInflight 小於等於 0 時，實作端可自由決定預設值（例如設為 1）。
 //
 // 備註:
-//   - 目前 NATSCoreBus 只使用 QueueGroup；MaxInflight 可保留未來擴充。
+//   - MaxInflight 目前尚未在 NATSCoreBus 中實作，僅保留於 SubOptions。
 type SubOptions struct {
 	QueueGroup  string
 	MaxInflight int
@@ -207,6 +207,7 @@ type Bus interface {
 //
 // 功能:
 //   - 承載連線相關參數，提供實作層初始化時使用。
+//   - 可選擇提供 OnHandlerError，讓訂閱 handler 的錯誤回報給上層統一處理。
 //
 // 欄位說明:
 //   - URL: 連線端點，例如 NATS server 的 URL。
@@ -217,10 +218,21 @@ type Bus interface {
 //     在 NATSCoreBus 中會透過 nats.Timeout(opts.Timeout) 套用到 NATS 連線選項，
 //     未來也可擴充用在 Request 等需要逾時控制的操作。
 //   - MaxReconnects: 最大重連次數，-1 代表無限，0 代表使用 NATS 預設值。
+//   - HandlerTimeout: 單筆 handler 的處理逾時；為 0 代表不啟用。
+//     用於「每筆訊息獨立生命週期」的場景：在 Subscribe 的 callback 中派生 per-message ctx。
+//     注意：ctx 只是訊號，handler 內部的 I/O / queue / lock 必須自行尊重 ctx 才會真的中止。
+//   - OnHandlerError: 訂閱 handler 回傳錯誤時的回報鉤子。
+//     用於「非同步 callback 無法 return error」的情境，讓上層可以統一做 log/落地/告警。
+//     若為 nil，代表不處理（維持 no-op，不會在 pubsub 層自行 log）。
 //
 // 契約 / 限制:
 //   - 欄位為零值時的行為由實作層定義，呼叫端不應過度依賴預設細節。
 //   - URL 應為合法的連線字串，否則實作層在連線時會直接回傳錯誤。
+//   - HandlerTimeout 若啟用，handler 不應無視 ctx.Done()；
+//     否則逾時只會讓 ctx.Done() 變為可讀（發出取消/逾時訊號），
+//     不保證能停止阻塞中的工作，也不保證 handler 會自動回傳錯誤。
+//   - OnHandlerError 不應做過重或長時間阻塞的工作（避免拖慢訊息處理回呼）；
+//     若需要較重的處理，建議在上層自行轉交到 goroutine / queue 再處理。
 //
 // 備註:
 //   - 若需要更進階的選項（如 TLS 設定），建議透過實作層額外提供建構器或包裝。
@@ -231,4 +243,7 @@ type BusOptions struct {
 	ReconnectWait time.Duration
 	Timeout       time.Duration
 	MaxReconnects int // -1=無限; 0=走 nats 預設
+	// HandlerTimeout 是單筆 handler 的處理逾時；為 0 代表不啟用。
+	HandlerTimeout time.Duration
+	OnHandlerError func(ctx context.Context, subject string, err error)
 }

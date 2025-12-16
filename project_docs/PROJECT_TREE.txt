@@ -1,6 +1,7 @@
 .
 ├── .env
 ├── .gitignore
+├── .pre-commit-config.yaml
 ├── .python-version
 ├── README.md
 ├── common
@@ -101,10 +102,17 @@
 │   │   ├── loader.go
 │   │   └── types.go
 │   ├── pubsub
+│   │   ├── README.md
 │   │   ├── bus.go
-│   │   └── nats_core.go
+│   │   ├── bus_test.go
+│   │   ├── nats_core.go
+│   │   └── nats_core_test.go
 │   ├── symbols
-│   │   └── resolver.go
+│   │   ├── README.md
+│   │   ├── loader.go
+│   │   ├── loader_test.go
+│   │   ├── resolver.go
+│   │   └── resolver_test.go
 │   └── transport
 │       ├── rest
 │       └── ws
@@ -241,12 +249,15 @@
 │   └── kols
 ├── project_docs
 │   ├── AI_VERSION_GUARD.txt
+│   ├── GO_COMMENT_STANDARD.txt
 │   ├── Info.txt
 │   ├── PROJECT_TREE.txt
+│   ├── README_PACKAGE_TEMPLATE.md
 │   ├── SERVER_VERSION.txt
 │   ├── intro
 │   │   ├── hf_market_data_kol.md
 │   │   └── lf_market_data_kol.md
+│   ├── refactor_backlog.md
 │   └── 技術架構圖
 │       ├── v1.0.drawio
 │       ├── v2.0.drawio
@@ -346,4 +357,4 @@
     ├── checkdoc.go
     └── runtime_bootstrap.py
 
-169 directories, 178 files
+169 directories, 189 files

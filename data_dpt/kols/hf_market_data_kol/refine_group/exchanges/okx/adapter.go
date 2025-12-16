@@ -165,7 +165,7 @@ func handleTradesAll(env *marketcommonv1.Envelope, res symbols.Resolver) ([]rg.O
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)
@@ -249,7 +249,7 @@ func handleTrades(env *marketcommonv1.Envelope, res symbols.Resolver) ([]rg.Out,
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)
@@ -334,7 +334,7 @@ func handleBBO(env *marketcommonv1.Envelope, res symbols.Resolver) ([]rg.Out, er
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)
@@ -421,7 +421,7 @@ func handleBook(env *marketcommonv1.Envelope, res symbols.Resolver) ([]rg.Out, e
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)
@@ -522,7 +522,7 @@ func handleMarkPrice(env *marketcommonv1.Envelope, res symbols.Resolver) ([]rg.O
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)
@@ -605,7 +605,7 @@ func handleIndexTickers(env *marketcommonv1.Envelope, res symbols.Resolver) ([]r
 
 	vendor := strings.TrimSpace(head.Arg.InstID)
 	canon := vendor
-	if c, err := res.ReverseResolve("okx", vendor); err == nil && c != "" {
+	if c, err := res.NativeToCanonical("okx", vendor); err == nil && c != "" {
 		canon = c
 	}
 	mtype := inferMarketType(canon)

@@ -13,9 +13,33 @@ package pubsub
 
 import (
 	"context"
+	"net"
 	"testing"
 	"time"
 )
+
+// requireNATSServer 確認本機 NATS server 是否可用；不可用就跳過整合測試。
+//
+// 功能:
+//   - 在測試開始前先探測 "127.0.0.1:4222" 是否有服務在聽。
+//   - 若不可用則 t.Skip，避免 CI/本機未啟動 NATS 時整包測試直接 fail。
+//
+// 參數:
+//   - t: 測試物件。
+//
+// 回傳:
+//   - 無。
+func requireNATSServer(t *testing.T) {
+	t.Helper()
+
+	// 用 TCP 連線測一下 4222 是否可用。
+	conn, err := net.DialTimeout("tcp", "127.0.0.1:4222", 300*time.Millisecond)
+	if err != nil {
+		t.Skipf("跳過：偵測不到本機 NATS (127.0.0.1:4222): %v", err)
+		return
+	}
+	_ = conn.Close()
+}
 
 // newTestBus 建一個連到本機 NATS 的 NATSCoreBus。
 //
@@ -27,18 +51,23 @@ import (
 func newTestBus(t *testing.T) *NATSCoreBus {
 	t.Helper()
 
+	requireNATSServer(t)
+
 	opts := BusOptions{
 		URL:           "nats://127.0.0.1:4222",
 		Name:          "dorma-test-natscorebus",
-		PingInterval:  0, // 讓 NewNATSCoreBus 自己補預設值
+		PingInterval:  0,
 		ReconnectWait: 0,
 		Timeout:       0,
 		MaxReconnects: 0,
+
+		// 測試明確關掉 per-message timeout，避免未來預設策略變動造成測試抖動。
+		HandlerTimeout: 0,
 	}
 
 	bus, err := NewNATSCoreBus(opts)
 	if err != nil {
-		t.Fatalf("無法建立 NATSCoreBus，請確認本機 NATS 是否有啟動: %v", err)
+		t.Fatalf("無法建立 NATSCoreBus: %v", err)
 	}
 	return bus
 }
@@ -60,7 +89,7 @@ func TestNATSCoreBus_PublishSubscribe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	subject := "test.natscorebus.pubsub"
+	subject := "test.natscorebus.pubsub." + time.Now().Format("150405.000000000")
 	payload := []byte(`{"kind":"test","msg":"hello"}`)
 
 	// 用 channel 收 handler 收到的訊息，方便測試驗證。
@@ -68,9 +97,13 @@ func TestNATSCoreBus_PublishSubscribe(t *testing.T) {
 
 	// 建立訂閱：收到訊息就塞進 channel。
 	_, err := bus.Subscribe(ctx, subject, func(ctx context.Context, m *Message) error {
-		_ = ctx
-		msgCh <- m
-		return nil
+		select {
+		case msgCh <- m:
+			return nil
+		case <-ctx.Done():
+			// ctx 只是訊號；這裡選擇尊重 ctx，避免 callback 卡死。
+			return ctx.Err()
+		}
 	})
 	if err != nil {
 		t.Fatalf("Subscribe 失敗: %v", err)

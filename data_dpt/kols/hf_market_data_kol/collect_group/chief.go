@@ -148,7 +148,7 @@ func (c *Chief) Start(ctx context.Context, exchange, feed string, canon []string
 	}
 
 	// 2) 在 Chief 內部反查：canonical -> native
-	exSymbols, err := c.resolver.ResolveMany(canon, ex)
+	exSymbols, err := c.resolver.BatchCanonicalToNative(canon, ex)
 	if err != nil {
 		return fmt.Errorf("resolve symbols for %s: %w", ex, err)
 	}
