@@ -15,6 +15,11 @@ package pubsub
 import (
 	// === 標準函式庫 (Standard Library) ===
 	"context"
+	"errors"
+	"fmt"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	// === 第三方套件 (Third-Party Libraries) ===
@@ -90,7 +95,7 @@ func (s *natsCoreSub) Drain() error { return s.sub.Drain() }
 //   - 本實作僅使用 NATS Core API，若需要 JetStream 需另外實作。
 type NATSCoreBus struct {
 	nc   *nats.Conn
-	opts BusOptions
+	opts busOptions
 }
 
 var (
@@ -102,48 +107,100 @@ var (
 // NewNATSCoreBus 建立一個使用 NATS Core 的 Bus 實例。
 //
 // 功能:
-//   - 基於傳入的 BusOptions 初始化 NATS 連線。
-//   - 對部分為零值的設定欄位套用預設值（例如 PingInterval、ReconnectWait 等）。
+//   - 使用系統內建的預設連線與行為設定，初始化 NATS Core 連線。
+//   - 封裝底層 NATS client，提供統一的 Publish / Subscribe / Close 能力。
 //
 // 參數:
-//   - opts: 連線設定與行為相關的 BusOptions。
+//   - 無。
 //
 // 回傳:
 //   - *NATSCoreBus: 成功建立時回傳新的 Bus 實例。
 //   - error: 若 NATS 連線建立失敗則回傳錯誤。
 //
 // 備註:
-//   - 預設值行為：
-//     PingInterval  為 0 時 → 10 秒。
-//     ReconnectWait 為 0 時 → 500 毫秒。
-//     Timeout       為 0 時 → 5 秒（會透過 nats.Timeout 套用到 NATS 連線 timeout）。
-//     MaxReconnects 為 0 時 → -1（視為無限重連）。
-func NewNATSCoreBus(opts BusOptions) (*NATSCoreBus, error) {
-	if opts.PingInterval == 0 {
-		opts.PingInterval = 10 * time.Second
+//   - 本建構函式採用固定的系統預設值，不提供外部調整連線行為。
+//   - 預設值說明：
+//     PingInterval  = 10 秒。
+//     ReconnectWait = 500 毫秒。
+//     Timeout       = 5 秒（套用至 NATS 連線 timeout）。
+//     MaxReconnects = -1（無限重連）。
+func NewNATSCoreBus() (*NATSCoreBus, error) {
+	const (
+		// 系統內建的預設 NATS 端點（不依賴第三方套件的 DefaultURL）
+		defaultNATSURL = "nats://127.0.0.1:4222"
+
+		// 允許外部覆蓋端點（例如部署環境注入）
+		envNATSURLKey = "NATS_URL"
+
+		pingInterval  = 10 * time.Second
+		reconnectWait = 500 * time.Millisecond
+		timeout       = 5 * time.Second
+		maxReconnects = -1
+	)
+
+	// 端點來源：優先採用外部注入，其次才使用系統預設值。
+	urlStr := strings.TrimSpace(os.Getenv(envNATSURLKey))
+	if urlStr == "" {
+		urlStr = defaultNATSURL
 	}
-	if opts.ReconnectWait == 0 {
-		opts.ReconnectWait = 500 * time.Millisecond
-	}
-	if opts.Timeout == 0 {
-		opts.Timeout = 5 * time.Second
-	}
-	if opts.MaxReconnects == 0 {
-		opts.MaxReconnects = -1
+
+	// 驗證 URL 格式（支援逗號分隔多個 server URL）
+	if err := validateNATSURLList(urlStr); err != nil {
+		return nil, err
 	}
 
 	nc, err := nats.Connect(
-		opts.URL,
-		nats.Name(opts.Name),
-		nats.PingInterval(opts.PingInterval),
-		nats.ReconnectWait(opts.ReconnectWait),
-		nats.Timeout(opts.Timeout),
-		nats.MaxReconnects(opts.MaxReconnects),
+		urlStr,
+		nats.PingInterval(pingInterval),
+		nats.ReconnectWait(reconnectWait),
+		nats.Timeout(timeout),
+		nats.MaxReconnects(maxReconnects),
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &NATSCoreBus{nc: nc, opts: opts}, nil
+
+	return &NATSCoreBus{
+		nc:   nc,
+		opts: busOptions{
+			// 目前全走 zero value
+			// HandlerTimeout: 0
+			// OnHandlerError: nil
+		},
+	}, nil
+}
+
+// validateNATSURLList 驗證 NATS URL（支援逗號分隔多個 URL）。
+//
+// 規則（可依你系統需要再收緊）：
+//   - 每一段必須可被 url.Parse 解析。
+//   - scheme 僅允許 nats / tls（避免不預期的 ws/http scheme 進來）。
+//   - host 必須存在（避免只有 "nats://" 這類空值）。
+func validateNATSURLList(raw string) error {
+	parts := strings.Split(raw, ",")
+	for _, p := range parts {
+		s := strings.TrimSpace(p)
+		if s == "" {
+			return errors.New("invalid NATS_URL: empty entry")
+		}
+
+		u, err := url.Parse(s)
+		if err != nil {
+			return fmt.Errorf("invalid NATS_URL: parse failed: %w", err)
+		}
+
+		switch strings.ToLower(u.Scheme) {
+		case "nats", "tls":
+			// ok
+		default:
+			return fmt.Errorf("invalid NATS_URL: unsupported scheme=%s", u.Scheme)
+		}
+
+		if strings.TrimSpace(u.Host) == "" {
+			return fmt.Errorf("invalid NATS_URL: host is empty (url=%s)", s)
+		}
+	}
+	return nil
 }
 
 // Publish 在 NATS 上發佈一則訊息。

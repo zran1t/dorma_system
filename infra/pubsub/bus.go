@@ -236,7 +236,7 @@ type Bus interface {
 //
 // 備註:
 //   - 若需要更進階的選項（如 TLS 設定），建議透過實作層額外提供建構器或包裝。
-type BusOptions struct {
+type busOptions struct {
 	URL           string
 	Name          string
 	PingInterval  time.Duration

@@ -197,7 +197,7 @@ message Envelope {
   Direction                 direction       = 6;  // up / down / lateral
   Actor                     source          = 7;  // 當前這一跳來源（化名後 actor_id）
   Actor                     destination     = 8;  // 當前這一跳目的（化名後 actor_id）
-  Priority                  priority        = 9; // 優先級
+  Priority                  priority        = 9;  // 優先級
   Category                  category        = 10; // 監控用粗分類
   Body                      body            = 11; // 實際要傳遞內容
   string                    signature       = 12; // 防篡改欄位（HAMC)

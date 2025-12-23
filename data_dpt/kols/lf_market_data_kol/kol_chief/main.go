@@ -41,10 +41,7 @@ func main() {
 	}
 
 	// bus for collectors (pub only)
-	bus, err := pubsub.NewNATSCoreBus(pubsub.BusOptions{
-		URL:  nurl,
-		Name: "lf_market_data_kol.collectors",
-	})
+	bus, err := pubsub.NewNATSCoreBus()
 	if err != nil {
 		log.Fatalf("NATS connect (collectors) failed: %v", err)
 	}
