@@ -20,7 +20,7 @@ import (
 	"time"
 
 	// === 第三方套件 (Third-Party Libraries) ===
-	// 無
+	"github.com/gorilla/websocket"
 
 	// === 系統內模組 (Internal Modules) ===
 	"dorma_system/infra/pubsub"
@@ -142,7 +142,7 @@ func (c *Collector) Subscribe(ctx context.Context) error {
 //
 // 功能:
 //   - 根據 Adapter / Config 決定是否定期送出 ping 或 heartbeat payload。
-//   - 持續從 WSClient.Recv 取得訊息，交給 Adapter 解析，再用 Publisher.Publish 發佈。
+//   - 以獨立 reader goroutine 執行阻塞 Recv，並透過 channel 回傳訊息/錯誤供主循環 select。
 //   - 當 Recv 發生錯誤時，會關閉連線、等待 backoff，然後嘗試重連與重新訂閱。
 //   - 若 ctx 被取消（ctx.Done 收到訊號），則優雅結束主循環。
 //
@@ -154,7 +154,8 @@ func (c *Collector) Subscribe(ctx context.Context) error {
 //
 // 備註:
 //   - 重連與重訂閱失敗時不會立刻返回錯誤，而是留給下一輪循環繼續嘗試。
-//   - msgType 僅處理 TextMessage（值為 1），其他型別目前會被忽略。
+//   - msgType 僅處理 websocket.TextMessage，其他型別目前會被忽略。
+//   - 每個「連線生命週期」只會有一個 reader goroutine：讀取錯誤後 reader 結束；重連成功後再啟動新的 reader，避免 concurrent read。
 func (c *Collector) Run(ctx context.Context) error {
 	// 決定心跳 payload 與間隔：優先採用 Adapter 的設定，沒有再用 config 裡的 PingEvery。
 	hbPayload, hbEvery := c.adj.Heartbeat()
@@ -168,60 +169,106 @@ func (c *Collector) Run(ctx context.Context) error {
 		defer hbTicker.Stop()
 	}
 
+	// 把 hbTicker.C 抽成可為 nil 的 channel，讓 select 可讀性更高。
+	var hbC <-chan time.Time
+	if hbTicker != nil {
+		hbC = hbTicker.C
+	}
+
+	type wsMsg struct {
+		msgType int
+		data    []byte
+	}
+
+	// reader → 主循環事件通道。
+	msgCh := make(chan wsMsg, 16)
+	errCh := make(chan error, 1)
+
+	// startReader 啟動一個 reader goroutine。
+	//
+	// 契約:
+	//   - 每次只啟動一個 reader；當 Recv 出錯時該 reader 會結束，並回報 errCh。
+	//   - 重連成功後，由主循環再次呼叫 startReader() 啟動新的 reader。
+	startReader := func() {
+		go func() {
+			for {
+				msgType, data, err := c.ws.Recv(ctx)
+				if err != nil {
+					// 只送一次錯誤，避免 errCh 塞滿造成阻塞。
+					select {
+					case errCh <- err:
+					default:
+					}
+					return
+				}
+
+				select {
+				case msgCh <- wsMsg{msgType: msgType, data: data}:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
+	}
+
+	// 第一次啟動 reader（假設上層已先 Connect + Subscribe；若未做，Recv 會回錯並進入重連流程）。
+	startReader()
+
 	for {
 		select {
 		case <-ctx.Done():
 			// 上層要求結束，乾淨退出主循環。
+			_ = c.ws.Close()
 			return nil
-		default:
-			// 保留 default 分支，避免 select 在沒有事件時完全阻塞心跳與 Recv 邏輯。
-		}
 
-		// 非阻塞心跳：到點才送 ping / 心跳封包，沒到點就直接略過。
-		if hbTicker != nil {
-			select {
-			case <-hbTicker.C:
-				if hbPayload != "" {
-					_ = c.ws.SendJSON(ctx, hbPayload)
-				} else {
-					_ = c.ws.SendPing(ctx)
-				}
-			default:
-				// 還沒到時間就先不動，讓主循環繼續往下跑 Recv。
+		case <-hbC:
+			// 到點才送 ping / 心跳封包。
+			if hbPayload != "" {
+				_ = c.ws.SendJSON(ctx, hbPayload)
+			} else {
+				_ = c.ws.SendPing(ctx)
 			}
-		}
 
-		// 阻塞等待下一則 WS 訊息。
-		msgType, data, err := c.ws.Recv(ctx)
-		if err != nil {
+		case err := <-errCh:
 			log.Printf("[collector] 接收訊息錯誤: %v -> 重新連線中...", err)
-			_ = c.ws.Close() // 先關閉舊連線，避免殘留狀態。
 
-			// 在重連前等待一段 backoff 時間，途中若 ctx 被取消就直接結束。
-			select {
-			case <-time.After(c.conf.ReconnectBackoff):
-			case <-ctx.Done():
-				return nil
+			// reader 已結束：接下來由主循環負責重連與重訂閱；成功後再啟新 reader。
+			for {
+				_ = c.ws.Close() // 先關閉舊連線，避免殘留狀態。
+
+				// 在重連前等待一段 backoff 時間，途中若 ctx 被取消就直接結束。
+				select {
+				case <-time.After(c.conf.ReconnectBackoff):
+				case <-ctx.Done():
+					return nil
+				}
+
+				// 嘗試重連與重新訂閱；失敗就留在 loop 內繼續 backoff 重試。
+				if err := c.Connect(ctx); err != nil {
+					continue
+				}
+				if err := c.Subscribe(ctx); err != nil {
+					continue
+				}
+
+				// 重連＋重訂閱成功後，啟動新的 reader，恢復收訊。
+				startReader()
+				break
 			}
 
-			// 嘗試重連與重新訂閱，失敗就下一輪再試，不直接中止整個 Collector。
-			if err := c.Connect(ctx); err != nil {
+		case m := <-msgCh:
+			// 正常情況下會走到這裡：處理收到的 WS 訊息。
+			if m.msgType != websocket.TextMessage {
 				continue
 			}
-			if err := c.Subscribe(ctx); err != nil {
-				continue
-			}
-			continue
-		}
 
-		// 正常情況下會走到這裡：處理收到的 WS 訊息。
-		if msgType == 1 /* websocket.TextMessage */ {
 			// 交給交易所 Adapter 做解析與路由決策。
-			subject, body, err := c.adj.Handle(data)
+			subject, body, err := c.adj.Handle(m.data)
 			if err != nil {
 				log.Printf("[collector] 處理訊息錯誤: %v", err)
 				continue
 			}
+
 			// 有主題且有內容才發佈，避免發送空包。
 			if subject != "" && len(body) > 0 {
 				if err := c.pub.Publish(ctx, subject, body); err != nil {
