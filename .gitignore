@@ -111,3 +111,12 @@ buf.lock
 .LSOverride
 Icon?
 ._*
+
+# =========================
+# Editor / OS
+# =========================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
