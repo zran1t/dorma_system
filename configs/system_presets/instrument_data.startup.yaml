@@ -1,0 +1,45 @@
+# File: configs/system_presets/instrument_data.startup.yaml
+#
+# 職責 (Responsibility):
+#     定義系統啟動時的 Instrument Data「訂閱矩陣 (Startup Matrix)」，用以宣告：
+#       - 以 exchange 為邊界：各交易所需啟用哪些「衍生品 / 風控相關」之公開資料訂閱
+#       - feeds 依資料來源的天然粒度（scope）配置：market-level / instId-level
+#       - 本檔僅描述「訂閱意圖」，實際可訂閱能力由 loader/validator 依 adapter 能力表驗證
+#
+# 注意事項 (Notes):
+#     - baseline（系統必需）由 loader 強制執行，不做成可關閉開關：
+#         1) instruments_info：交易規則 / 合約規格（可由 REST 初始化 + WS 增量維護，策略由系統決定）
+#         2) price_limit：價格限制 / 下單約束（來源由交易白名單決定；見 trading_allowlist.yaml）
+#     - loader 契約：
+#         1) exchanges.<ex>.feeds.<feed>.enabled=true 表示啟用該 feed
+#         2) 若 feed 支援 instId-level 過濾，使用 exchanges.<ex>.feeds.<feed>.inst_ids 指定 instId 清單
+#         3) 未提供 inst_ids 時，視為以該交易所 adapter 的預設 scope 訂閱（通常是 market-level / instType-level）
+#     - feed scope（語意）：
+#         open_interest      : market-level（通常依 instType=SWAP/FUTURES）
+#         liquidation_orders : market-level（通常依 instType=SWAP/FUTURES）
+#         adl_warning        : market-level（通常依 instType=SWAP/FUTURES）
+#         funding_rate       : instId-level（依 instId，例如 BTC-USDT-SWAP）
+#     - market 語意：
+#         本檔目前聚焦衍生品（swap/futures）相關 feeds；spot 若未有對應公共 feed，保持空白即可
+#
+version: 1
+
+summary: "Instrument Data startup matrix（public derivative/instrument feeds）。Baseline feeds 由系統強制啟用。"
+
+exchanges:
+  okx:
+    feeds:
+      # market-level (instType-level)
+      open_interest:
+        enabled: true
+      liquidation_orders:
+        enabled: true
+      adl_warning:
+        enabled: true
+
+      # instId-level
+      funding_rate:
+        enabled: true
+        inst_ids: [BTC-USDT-SWAP, ETH-USDT-SWAP]
+
+  binance: {}

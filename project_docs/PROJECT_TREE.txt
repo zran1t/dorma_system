@@ -34,7 +34,8 @@
 │   │   ├── binance.yaml
 │   │   └── okx.yaml
 │   └── system_presets
-│       └── startup_matrix.yaml
+│       ├── instrument_data.startup.yaml
+│       └── market_data.startup.yaml
 ├── data_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
@@ -116,8 +117,11 @@
 │   └── transport
 │       ├── rest
 │       └── ws
+│           ├── README.md
 │           ├── client.go
+│           ├── client_test.go
 │           ├── collect_base.go
+│           ├── collect_base_test.go
 │           └── types.go
 ├── initialization_dpt
 │   ├── __init__.py
@@ -242,6 +246,7 @@
 │                   │   ├── 1.blk
 │                   │   └── index.db
 │                   └── obs
+├── none
 ├── observability_dpt
 ├── place_orders_dpt
 │   ├── dpt_comm_room
@@ -357,4 +362,4 @@
     ├── checkdoc.go
     └── runtime_bootstrap.py
 
-169 directories, 189 files
+169 directories, 194 files
