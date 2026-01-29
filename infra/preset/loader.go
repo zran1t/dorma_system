@@ -2,57 +2,106 @@
 // Package: preset
 //
 // 職責 (Responsibility):
-//     讀取並解析系統預設的 Autostart Matrix 組態。
-//     此模組為唯一權威路徑，外部不得指定自訂位置。
+//     提供對外唯一入口：讀取 system_presets，並編譯為各部門可直接使用的 packets。
 //
 // 注意事項 (Notes):
-//     - 若檔案遺失或解析錯誤，由上層判斷是否中止啟動。
-//     - 不做自動補檔或 fallback；系統應確保配置正確。
-//     - 僅負責 I/O 與反序列化，驗證與修正留給 validator。
+//     - Loader 僅負責：I/O → 解析 → 基本驗證 → 編譯輸出。
+//     - Adapter 能力驗證（capability table）不在此處做；應由 validator/更上層流程處理。
+//     - 若要避免重複讀檔，可使用 LoadAllPackets() 一次讀取並分發。
 
 package preset
 
 import (
-	// === 標準函式庫 (Standard Library) ===
-	"os"
 	"path/filepath"
 
-	// === 第三方套件 (Third-Party Libraries) ===
-	"gopkg.in/yaml.v3"
-	// === 系統內模組 (Internal Modules) ===
-	// 無
+	"dorma_system/infra/preset/compiler"
+	"dorma_system/infra/preset/packet"
+	"dorma_system/infra/preset/reader"
+	"dorma_system/infra/preset/validator"
 )
 
-// defaultAutostartMatrixPath 系統唯一權威組態位置。
-// 不匯出以避免外部存取或誤用。
-const defaultAutostartMatrixPath = "configs/system_presets/startup_matrix.yaml"
+type AllPackets struct {
+	MarketData     *packet.MarketDataPacket
+	InstrumentData *packet.InstrumentDataPacket
+	TradingAllow   *packet.TradingAllowlistPacket
+}
 
-// LoadAutostartMatrix 載入系統預設的啟動矩陣。
-//
-// 功能:
-//   - 從固定路徑讀取 YAML 檔。
-//   - 將內容解析為 AutostartMatrix 結構並回傳。
-//
-// 回傳:
-//   - *AutostartMatrix: 成功解析後的設定結構。
-//   - error: 若檔案不存在或內容錯誤則回傳錯誤。
-//
-// 備註:
-//   - 不處理任何驗證與預設填補；此階段僅保證 I/O 成功。
-func LoadAutostartMatrix() (*AutostartMatrix, error) {
-	p := filepath.FromSlash(defaultAutostartMatrixPath)
+func LoadMarketDataPacket() (*packet.MarketDataPacket, error) {
+	p := filepath.FromSlash(DefaultMarketDataStartupPath)
 
-	// 僅嘗試讀取，不進行存在性檢查；讓錯誤自然回傳給上層。
-	b, err := os.ReadFile(p)
+	pre, err := reader.LoadMarketDataPreset(p)
 	if err != nil {
 		return nil, err
 	}
-
-	var m AutostartMatrix
-
-	// 使用 YAML 解構，保留註解友善特性與階層語意。
-	if err := yaml.Unmarshal(b, &m); err != nil {
+	if err := validator.ValidateMarketDataPreset(pre); err != nil {
 		return nil, err
 	}
-	return &m, nil
+	out, err := compiler.CompileMarketData(pre)
+	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateMarketDataPacket(out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func LoadInstrumentDataPacket() (*packet.InstrumentDataPacket, error) {
+	p := filepath.FromSlash(DefaultInstrumentDataStartupPath)
+
+	pre, err := reader.LoadInstrumentDataPreset(p)
+	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateInstrumentDataPreset(pre); err != nil {
+		return nil, err
+	}
+	out, err := compiler.CompileInstrumentData(pre)
+	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateInstrumentDataPacket(out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func LoadTradingAllowlistPacket() (*packet.TradingAllowlistPacket, error) {
+	p := filepath.FromSlash(DefaultTradingAllowlistPath)
+
+	pre, err := reader.LoadTradingAllowlistPreset(p)
+	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateTradingAllowlistPreset(pre); err != nil {
+		return nil, err
+	}
+	out, err := compiler.CompileTradingAllowlist(pre)
+	if err != nil {
+		return nil, err
+	}
+	if err := validator.ValidateTradingAllowlistPacket(out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func LoadAllPackets() (*AllPackets, error) {
+	md, err := LoadMarketDataPacket()
+	if err != nil {
+		return nil, err
+	}
+	id, err := LoadInstrumentDataPacket()
+	if err != nil {
+		return nil, err
+	}
+	ta, err := LoadTradingAllowlistPacket()
+	if err != nil {
+		return nil, err
+	}
+	return &AllPackets{
+		MarketData:     md,
+		InstrumentData: id,
+		TradingAllow:   ta,
+	}, nil
 }
