@@ -67,13 +67,14 @@ coverage/
 
 # JetStream / NATS 儲存資料
 nats_data/
+JetStream
 
 # Redis 實體資料庫
 redis_data/
 
 # 執行時紀錄檔
-#logs/
-#reports/
+logs/
+reports/
 
 # 临时輸出或測試快取
 /tmp/

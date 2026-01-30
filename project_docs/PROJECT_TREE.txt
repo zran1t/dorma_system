@@ -2,8 +2,12 @@
 ├── .env
 ├── .gitignore
 ├── .pre-commit-config.yaml
-├── .python-version
 ├── README.md
+├── bin
+│   └── presetc
+├── cmd
+│   └── presetc
+│       └── main.go
 ├── common
 │   ├── __init__.py
 │   ├── __pycache__
@@ -16,7 +20,6 @@
 │   └── subject_resolver.py
 ├── configs
 │   ├── addressbook
-│   │   └── comm_rooms.yaml
 │   ├── channels
 │   │   ├── data.yaml
 │   │   ├── initialization.yaml
@@ -101,12 +104,30 @@
 ├── go.sum
 ├── infra
 │   ├── preset
+│   │   ├── README.md
+│   │   ├── compiler
+│   │   │   ├── instrument_data.go
+│   │   │   ├── market_data.go
+│   │   │   └── trading_allowlist.go
 │   │   ├── loader.go
+│   │   ├── loader_test.go
 │   │   ├── packet
 │   │   │   ├── instrument_data_types.go
 │   │   │   ├── market_data_types.go
+│   │   │   ├── trading_allowlist_types.go
 │   │   │   └── types.go
-│   │   └── types.go
+│   │   ├── paths.go
+│   │   ├── reader
+│   │   │   ├── common.go
+│   │   │   ├── instrument_data.go
+│   │   │   ├── market_data.go
+│   │   │   └── trading_allowlist.go
+│   │   ├── types.go
+│   │   └── validator
+│   │       ├── common.go
+│   │       ├── instrument_data.go
+│   │       ├── market_data.go
+│   │       └── trading_allowlist.go
 │   ├── pubsub
 │   │   ├── README.md
 │   │   ├── bus.go
@@ -128,35 +149,6 @@
 │           ├── collect_base.go
 │           ├── collect_base_test.go
 │           └── types.go
-├── initialization_dpt
-│   ├── __init__.py
-│   ├── __pycache__
-│   ├── dpt_comm_room
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   ├── communicate.py
-│   │   └── communicate_core.py
-│   ├── dpt_dispatch_room
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   └── dispatcher.py
-│   └── kols
-│       ├── init_account_data_kol
-│       ├── init_analytics_data_kol
-│       ├── init_lf_data_kol
-│       │   ├── init_kline.py
-│       │   ├── kol_comm_room
-│       │   │   ├── __init__.py
-│       │   │   ├── __pycache__
-│       │   │   ├── communicate.py
-│       │   │   └── communicate_core.py
-│       │   ├── kol_dispatch_room
-│       │   │   ├── __init__.py
-│       │   │   ├── __pycache__
-│       │   │   └── dispatcher.py
-│       │   └── kol_watch_room
-│       │       └── stub.py
-│       └── init_ref_data_kol
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
@@ -251,7 +243,6 @@
 │                   │   ├── 1.blk
 │                   │   └── index.db
 │                   └── obs
-├── none
 ├── observability_dpt
 ├── place_orders_dpt
 │   ├── dpt_comm_room
@@ -284,8 +275,6 @@
 │   ├── position
 │   └── strategy
 ├── reports
-│   ├── init_audit_2025-09-28_10-24-10.json
-│   └── inter_audit_2025-09-28_10-24-10.json
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -353,7 +342,11 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
-├── test.py
+├── system_initializer
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── main.py
+│   └── preset_compiler.py
 ├── tests
 │   ├── conftest.py
 │   ├── lf_hf_market_data_sniffer
@@ -368,4 +361,4 @@
     ├── checkdoc.go
     └── runtime_bootstrap.py
 
-170 directories, 199 files
+162 directories, 200 files
