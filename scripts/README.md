@@ -5,7 +5,7 @@
 ### ✅ 開啟全部 Redis
 
 ```bash
-./scripts/start_all_redis.sh
+./scripts/redis_start_all.sh
 ```
 
 ---
@@ -25,7 +25,7 @@
 ### 🛑 關閉全部 Redis
 
 ```bash
-./scripts/stop_all_redis.sh
+./scripts/redis_stop_all.sh
 ```
 ---
 

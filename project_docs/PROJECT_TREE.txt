@@ -2,15 +2,19 @@
 ├── .env
 ├── .gitignore
 ├── .pre-commit-config.yaml
-├── README.md
-├── bin
-│   └── presetc
-├── cmd
-│   └── presetc
-│       └── main.go
 ├── common
 │   ├── __init__.py
 │   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── bus_config.cpython-311.pyc
+│   │   ├── bus_runtime.cpython-311.pyc
+│   │   ├── channel_config_loader.cpython-311.pyc
+│   │   ├── js_auditor.cpython-311.pyc
+│   │   ├── js_reset.cpython-311.pyc
+│   │   ├── nats_bootstrap.cpython-311.pyc
+│   │   ├── nats_comm.cpython-311.pyc
+│   │   ├── redis_cfg.cpython-311.pyc
+│   │   └── subject_resolver.cpython-311.pyc
 │   ├── channel_config_loader.py
 │   ├── js_auditor.py
 │   ├── js_reset.py
@@ -20,6 +24,7 @@
 │   └── subject_resolver.py
 ├── configs
 │   ├── addressbook
+│   │   └── comm_rooms.yaml
 │   ├── channels
 │   │   ├── data.yaml
 │   │   ├── initialization.yaml
@@ -152,129 +157,57 @@
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   └── main.cpython-311.pyc
 │   ├── main.py
 │   ├── routes
 │   │   ├── __init__.py
 │   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── strategy_pools.cpython-311.pyc
 │   │   └── strategy_pools.py
 │   ├── schemas
 │   │   ├── __init__.py
 │   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── strategy_pools.cpython-311.pyc
 │   │   └── strategy_pools.py
 │   └── service
 │       ├── __init__.py
 │       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   ├── injector_service.cpython-311.pyc
+│       │   ├── nats_publisher.cpython-311.pyc
+│       │   ├── persist_file.cpython-311.pyc
+│       │   ├── persist_redis.cpython-311.pyc
+│       │   └── service_entry.cpython-311.pyc
 │       ├── nats_publisher.py
 │       └── service_entry.py
-├── jetstream
-│   └── jetstream
-│       └── $G
-│           └── streams
-│               ├── INIT_BROADCAST_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── BC_durable_kol
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               ├── INIT_KOL_OUT_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── ALL_kol_durable
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               ├── INIT_TO_KOL_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── DIRECT_durable_kol
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               └── INTER_TO_DEPT_STREAM
-│                   ├── meta.inf
-│                   ├── meta.sum
-│                   ├── msgs
-│                   │   ├── 1.blk
-│                   │   └── index.db
-│                   └── obs
-│                       ├── DIRECT_durable_capital
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_data
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_initialization
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_risk
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       └── DIRECT_durable_strategy
-│                           ├── meta.inf
-│                           ├── meta.sum
-│                           └── o.dat
-├── logs
-│   └── nats.out
-├── nats_data
-│   └── jetstream
-│       └── $G
-│           └── streams
-│               └── KV_init
-│                   ├── meta.inf
-│                   ├── meta.sum
-│                   ├── msgs
-│                   │   ├── 1.blk
-│                   │   └── index.db
-│                   └── obs
 ├── observability_dpt
 ├── place_orders_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
 ├── project_docs
-│   ├── AI_VERSION_GUARD.txt
-│   ├── GO_COMMENT_STANDARD.txt
-│   ├── Info.txt
+│   ├── DEV_COMMANDS.txt
+│   ├── GO_COMMENT_STANDARD.md
 │   ├── PROJECT_TREE.txt
+│   ├── PYTHON_COMMENT_TEMPLATE.md
 │   ├── README_PACKAGE_TEMPLATE.md
 │   ├── SERVER_VERSION.txt
+│   ├── System Architecture Diagram
+│   │   ├── v1.0.drawio
+│   │   ├── v2.0.drawio
+│   │   ├── v2.1.drawio
+│   │   ├── v3.0.drawio
+│   │   ├── v3.1.drawio
+│   │   ├── v4.0.drawio
+│   │   └── v5.0.drawio
 │   ├── intro
 │   │   ├── hf_market_data_kol.md
 │   │   └── lf_market_data_kol.md
-│   ├── refactor_backlog.md
-│   └── 技術架構圖
-│       ├── v1.0.drawio
-│       ├── v2.0.drawio
-│       ├── v2.1.drawio
-│       ├── v3.0.drawio
-│       ├── v3.1.drawio
-│       ├── v4.0.drawio
-│       └── v5.0.drawio
+│   └── refactor_backlog.md
 ├── pytest.ini
-├── redis_data
-│   ├── capital
-│   ├── kline
-│   ├── order
-│   ├── position
-│   └── strategy
-├── reports
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -326,6 +259,7 @@
 │               └── v1
 │                   └── market_stream.proto
 ├── scripts
+│   ├── README.md
 │   ├── nats_start_all.sh
 │   ├── nats_status_check.sh
 │   ├── nats_stop_all.sh
@@ -342,11 +276,6 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
-├── system_initializer
-│   ├── __init__.py
-│   ├── __pycache__
-│   ├── main.py
-│   └── preset_compiler.py
 ├── tests
 │   ├── conftest.py
 │   ├── lf_hf_market_data_sniffer
@@ -358,7 +287,8 @@
 │   └── test_tools_bootstrap_3steps.py
 └── tools
     ├── __pycache__
+    │   └── runtime_bootstrap.cpython-311.pyc
     ├── checkdoc.go
     └── runtime_bootstrap.py
 
-162 directories, 200 files
+118 directories, 174 files

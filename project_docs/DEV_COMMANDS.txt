@@ -1,0 +1,4 @@
+refresh Project Tree:
+tree -a \
+  -I '(__pycache__|\.git|\.DS_Store|\.venv|\.pytest_cache|jetstream|nats_data|logs|redis_data|reports)' \
+  > project_docs/PROJECT_TREE.txt
