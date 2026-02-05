@@ -1,7 +1,4 @@
-# requirements-dev.in
-
 -r requirements.in
 
-# === 測試 & 開發工具 ===
 pytest
 pytest-asyncio

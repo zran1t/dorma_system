@@ -2,6 +2,9 @@
 ├── .env
 ├── .gitignore
 ├── .pre-commit-config.yaml
+├── cmd
+│   └── preset
+│       └── main.go
 ├── common
 │   ├── __init__.py
 │   ├── __pycache__
@@ -18,7 +21,6 @@
 │   ├── channel_config_loader.py
 │   ├── js_auditor.py
 │   ├── js_reset.py
-│   ├── json_schema_validator.py
 │   ├── nats_bootstrap.py
 │   ├── nats_comm.py
 │   └── subject_resolver.py
@@ -26,10 +28,8 @@
 │   ├── addressbook
 │   │   └── comm_rooms.yaml
 │   ├── channels
-│   │   ├── data.yaml
-│   │   ├── initialization.yaml
 │   │   ├── inter.yaml
-│   │   └── market.yaml
+│   │   └── intra.yaml
 │   ├── nats
 │   │   └── server.conf
 │   ├── redis
@@ -105,6 +105,10 @@
 │           ├── kol_chief
 │           ├── kol_comm_room
 │           └── kol_dispatch_room
+├── execution_dpt
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
+│   └── kols
 ├── go.mod
 ├── go.sum
 ├── infra
@@ -154,6 +158,14 @@
 │           ├── collect_base.go
 │           ├── collect_base_test.go
 │           └── types.go
+├── infra_py
+│   ├── logging
+│   │   └── logger.py
+│   ├── nats
+│   │   ├── js_auditor.py
+│   │   ├── js_bootstrap.py
+│   │   └── js_reset.py
+│   └── redis
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
@@ -184,17 +196,13 @@
 │       ├── nats_publisher.py
 │       └── service_entry.py
 ├── observability_dpt
-├── place_orders_dpt
-│   ├── dpt_comm_room
-│   ├── dpt_dispatch_room
-│   └── kols
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
 │   ├── GO_COMMENT_STANDARD.md
+│   ├── PRE_COMMIT_AND_REVIVE_BEHAVIOR.md
 │   ├── PROJECT_TREE.txt
 │   ├── PYTHON_COMMENT_TEMPLATE.md
 │   ├── README_PACKAGE_TEMPLATE.md
-│   ├── SERVER_VERSION.txt
 │   ├── System Architecture Diagram
 │   │   ├── v1.0.drawio
 │   │   ├── v2.0.drawio
@@ -203,9 +211,6 @@
 │   │   ├── v3.1.drawio
 │   │   ├── v4.0.drawio
 │   │   └── v5.0.drawio
-│   ├── intro
-│   │   ├── hf_market_data_kol.md
-│   │   └── lf_market_data_kol.md
 │   └── refactor_backlog.md
 ├── pytest.ini
 ├── requirements-dev.in
@@ -217,11 +222,9 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
-│       ├── capital_kol
-│       ├── pre_trade_kol
-│       └── system_risk_kol
 ├── schemas
 │   ├── disable
+│   │   ├── envelope.proto
 │   │   ├── message_protocol_v1.json
 │   │   ├── message_protocol_v1.md
 │   │   └── symbol_schema.json
@@ -242,9 +245,6 @@
 │   │   └── rust
 │   └── proto
 │       ├── envelope
-│       │   ├── CHANGELOG.md
-│       │   └── v1
-│       │       └── envelope.proto
 │       └── market
 │           ├── common
 │           │   ├── CHANGELOG.md
@@ -276,6 +276,11 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
+├── system_initializer
+│   ├── main.py
+│   └── steps
+│       ├── __init__.py
+│       └── nats_bootstrap.py
 ├── tests
 │   ├── conftest.py
 │   ├── lf_hf_market_data_sniffer
@@ -291,4 +296,4 @@
     ├── checkdoc.go
     └── runtime_bootstrap.py
 
-118 directories, 174 files
+121 directories, 176 files

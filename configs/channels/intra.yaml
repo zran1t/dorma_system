@@ -1,0 +1,112 @@
+# File: configs/channels/intra.yaml
+# Module: configs.channels.intra
+#
+# 職責 (Responsibility):
+#     定義「部門↔科別（KOL）」之 system control-plane 通道拓樸，供共識破裂後之第三層一致性（科別級）使用。
+#     提供 JetStream streams/consumers 的宣告式設定來源，支援 bootstrap/audit/reset 工具對拓樸進行一致性治理。
+#
+# 注意事項 (Notes):
+#     - 本通道僅承載「部門對其所屬科別」之權威系統操作命令（propose/ack/commit/abort/flush/kill/freeze），禁止承載跨部門細節與業務資料。
+#     - deliver_subject 不支援萬用字元，必須為每一個「科別」建立獨立 consumer；科別端僅訂閱自身 deliver subject。
+#     - Nats-Msg-Id 必須與 duplicates 視窗搭配，以提供共識流程在重送/重試情境下的去重保證。
+#     - 依賴規範：本 YAML 僅為設定檔，不得耦合上層業務模組；解析/驗證/套用由 infra_py 工具負責。
+
+nats:
+  servers:
+    - "nats://127.0.0.1:4222"
+
+subjects:
+  namespace: "intra"
+
+  # Publisher / Subscriber 模板（部門↔科別；system control-plane）
+  to_kol_tpl:     "intra.dpt.{dept}.kol.{kol}.sys.in"
+  to_kol_deliver: "intra.dpt.{dept}.kol.{kol}.sys.in.deliver"
+
+  # 固定部門清單（intra system control-plane 參與者）
+  departments:
+    - data
+    - state
+    - strategy
+    - risk
+    - execution
+
+  # 科別清單（最小可用集合；以「最小可停機之主業務單元」命名）
+  # 注意：intra 只宣告控制面拓樸；科別內部 unit/room 拓樸由各部門自行管理，不在此層展開。
+  kols:
+    # data_dpt（目前較清晰）
+    data:
+      - market_data_kol
+      - derivatives_stats_kol
+      - ref_data_kol
+      - account_data_kol
+
+    # state_dpt（預留；後續依實際科別補齊）
+    state: []
+
+    # strategy_dpt（預留；後續依實際科別補齊）
+    strategy: []
+
+    # risk_dpt（預留；後續依實際科別補齊）
+    risk: []
+
+    # execution_dpt（預留；後續依實際科別補齊）
+    execution: []
+
+jetstream:
+  streams:
+    - name: "INTRA_SYS_STREAM"
+      subjects:
+        - "intra.dpt.*.kol.*.sys.in"
+      storage: file
+      retention: limits
+      discard: old
+      duplicates: 6m
+      max_age: 30d
+
+      # deny_delete: true
+      # deny_purge: true
+
+  consumers:
+    # data_dpt / market_data_kol
+    - stream: "INTRA_SYS_STREAM"
+      name: "SYS_to_data_market_data_kol"
+      durable_name: "SYS_durable_data_market_data_kol"
+      filter_subject: "intra.dpt.data.kol.market_data_kol.sys.in"
+      deliver_subject: "intra.dpt.data.kol.market_data_kol.sys.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]
+
+    # data_dpt / derivatives_stats_kol
+    - stream: "INTRA_SYS_STREAM"
+      name: "SYS_to_data_derivatives_stats_kol"
+      durable_name: "SYS_durable_data_derivatives_stats_kol"
+      filter_subject: "intra.dpt.data.kol.derivatives_stats_kol.sys.in"
+      deliver_subject: "intra.dpt.data.kol.derivatives_stats_kol.sys.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]
+
+    # data_dpt / ref_data_kol
+    - stream: "INTRA_SYS_STREAM"
+      name: "SYS_to_data_ref_data_kol"
+      durable_name: "SYS_durable_data_ref_data_kol"
+      filter_subject: "intra.dpt.data.kol.ref_data_kol.sys.in"
+      deliver_subject: "intra.dpt.data.kol.ref_data_kol.sys.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]
+
+    # data_dpt / account_data_kol
+    - stream: "INTRA_SYS_STREAM"
+      name: "SYS_to_data_account_data_kol"
+      durable_name: "SYS_durable_data_account_data_kol"
+      filter_subject: "intra.dpt.data.kol.account_data_kol.sys.in"
+      deliver_subject: "intra.dpt.data.kol.account_data_kol.sys.in.deliver"
+      ack_policy: explicit
+      ack_wait: 30s
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]

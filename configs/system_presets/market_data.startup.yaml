@@ -19,7 +19,7 @@
 #
 version: 1
 
-summary: "啟動訂閱矩陣：以 exchange 為邊界，宣告各市場的 market data 訂閱意圖"
+summary: "啟動訂閱矩陣：以 exchange 為邊界，宣告各市場的 market data 訂閱z意圖"
 
 exchanges:
   okx:
