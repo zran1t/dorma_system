@@ -152,9 +152,10 @@ async def audit_channels_topology(cfg: Dict[str, Any], nc: NATS) -> Dict[str, An
     """
     if not isinstance(cfg, dict):
         raise ValueError("cfg must be dict")
-    if not isinstance(nc, NATS):
-        raise ValueError("nc must be NATS client")
 
+    # 僅驗證最小能力，不綁定具體實作型別
+    if not hasattr(nc, "jetstream"):
+        raise ValueError("nc must provide jetstream()")
     js = nc.jetstream()
 
     report: Dict[str, Any] = {
