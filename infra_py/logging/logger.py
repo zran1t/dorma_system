@@ -1,68 +1,47 @@
 """
-File: infra_py/logger.py
-Module: infra_py.logger
+File: infra_py/logging/logger.py
+Module: infra_py.logging.logger
 
 職責 (Responsibility):
-    提供 infra 層級統一之 logging 建立工具，
-    確保所有基礎設施模組具備一致的輸出格式與落地策略。
+    提供 infra 層級統一之 logger 取得工具（library-safe），
+    不在此處決定 handler / log path（由 entrypoint/system_initializer 負責）。
 
 注意事項 (Notes):
-    - 本模組僅負責 logger 初始化，不承擔任何業務語意。
-    - logger 為 process-local singleton，避免重複建立 handler。
+    - 本模組僅負責 get_logger，不做 logging.configure。
+    - 預設加上 NullHandler，避免 library 使用者未配置 logging 時產生警告。
     - 不得依賴 application 或 domain 層模組。
 """
 
-# === 標準函式庫 (Standard Library) ===
+from __future__ import annotations
+
 import logging
-from pathlib import Path
-from typing import Optional
-
-# === 第三方套件 (Third-Party Libraries) ===
-# 無
-
-# === 系統內模組 (Internal Modules) ===
-# 無
 
 
-def get_logger(name: str, *, subdir: str) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     """
-    get_logger 建立或取得指定名稱之 logger。
+    get_logger 取得指定名稱之 logger（不做 handler/path 決策）。
 
     功能:
-        - 建立具備檔案輸出能力之 logger。
-        - 統一 infra 層 log 格式與輸出位置。
+        - 回傳 logger instance。
+        - 若 logger 尚未配置任何 handler，會加上 NullHandler 避免警告。
+        - 不設定 level；由 root/entrypoint 決定。
 
     參數:
         - name: logger 名稱，通常使用 __name__。
-        - subdir: logs 目錄下的子目錄名稱。
 
     回傳:
-        - result: 已初始化完成之 Logger。
-        - error: 無。
-
-    備註:
-        - 同名 logger 僅會初始化一次。
-        - log 等級預設為 INFO。
+        - result: Logger。
     """
     logger = logging.getLogger(name)
+
+    # 若已經有 handler（例如 entrypoint 配置了），直接返回
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.INFO)
+    # library-safe：避免 "No handler could be found..." 類警告
+    logger.addHandler(logging.NullHandler())
 
-    base_dir = Path.cwd() / "logs" / subdir
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = base_dir / "infra.log"
-
-    handler = logging.FileHandler(log_file, encoding="utf-8")
-    formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%SZ",
-    )
-    handler.setFormatter(formatter)
-
-    logger.addHandler(handler)
-    logger.propagate = False
+    # 讓 root 的 handler 能接到（若 entrypoint 有配置 propagate/root handler）
+    logger.propagate = True
 
     return logger

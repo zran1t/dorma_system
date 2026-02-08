@@ -3,14 +3,14 @@ File: infra_py/nats/js_reset.py
 Module: infra_py.nats.js_reset
 
 職責 (Responsibility):
-    提供 JetStream 拓樸清理能力，
-    依 YAML 解析後之 dict 描述，刪除對應的 consumers 與 streams。
-    本模組用於初始化重置與環境回收，不參與日常資料流。
+    提供 JetStream 拓樸清理能力（破壞性），以 expected-driven 方式刪除 consumers 與 streams。
+    用於初始化重置與環境回收，不參與日常資料流。
 
 注意事項 (Notes):
     - 清理順序為 Consumer → Stream，不可顛倒。
-    - 呼叫端需保證 NATS client 已完成連線。
-    - 本模組具備破壞性操作，不得在運行中資料流使用。
+    - expected-driven：只刪除 YAML 宣告的資源，不列舉全量 inventory。
+    - 本模組具破壞性操作，不得在運行中資料流使用。
+    - 不得依賴 system_initializer 或 application/domain 層模組。
 """
 
 from __future__ import annotations
@@ -25,9 +25,10 @@ from nats.aio.client import Client as NATS
 
 # === 系統內模組 (Internal Modules) ===
 from infra_py.logging.logger import get_logger
+from infra_py.nats.expected_loader import build_expected_topology
 
 
-logger = get_logger(__name__, subdir="jetstream")
+logger = get_logger(__name__)
 
 
 async def reset_channels_topology(cfg: Dict[str, Any], nc: NATS) -> Dict[str, Any]:
@@ -39,23 +40,19 @@ async def reset_channels_topology(cfg: Dict[str, Any], nc: NATS) -> Dict[str, An
         - 於 consumers 清理完成後刪除 streams。
 
     參數:
-        - cfg: YAML mirror dict，描述 JetStream 拓樸。
+        - cfg: YAML mirror dict（描述 JetStream 拓樸）。
         - nc: 已連線之 NATS client。
 
     回傳:
-        - result: 清理操作報告。
-        - error: 無。
+        - result: 清理操作報告 dict。
+        - error: 無（刪除失敗會記錄於 errors 欄位）。
 
     備註:
         - 若資源不存在則記錄為 skipped，不視為錯誤。
-        - 任一刪除失敗將記錄於 errors 欄位。
+        - 任一刪除失敗將記錄於 errors 欄位，供上層治理判斷。
     """
-    if not isinstance(cfg, dict):
-        raise ValueError("cfg must be dict")
-    if not isinstance(nc, NATS):
-        raise ValueError("nc must be NATS client")
-
     js = nc.jetstream()
+    expected = build_expected_topology(cfg)
 
     report: Dict[str, Any] = {
         "trace_id": str(uuid.uuid4()),
@@ -65,64 +62,43 @@ async def reset_channels_topology(cfg: Dict[str, Any], nc: NATS) -> Dict[str, An
         "errors": [],
     }
 
-    js_cfg = cfg.get("jetstream") or {}
-    streams_cfg: List[Dict[str, Any]] = js_cfg.get("streams") or []
-    consumers_cfg: List[Dict[str, Any]] = js_cfg.get("consumers") or []
-
     # ------------------------------------------------------------------
     # Step 1: Consumers
     # ------------------------------------------------------------------
-    for c in consumers_cfg:
-        stream = c.get("stream")
-        durable = c.get("durable_name")
-
-        if not stream or not durable:
-            logger.warning("invalid consumer config | %s", c)
-            report["skipped"]["consumers"].append(str(c))
-            continue
-
-        key = f"{durable}@{stream}"
-
+    for c in expected.consumers:
         try:
-            await js.stream_info(stream)
-            await js.consumer_info(stream, durable)
+            await js.consumer_info(c.stream_name, c.durable_name)
         except Exception:
-            logger.info("consumer not exists | %s", key)
-            report["skipped"]["consumers"].append(key)
+            logger.info("consumer not exists | %s", c.key)
+            report["skipped"]["consumers"].append(c.key)
             continue
 
         try:
-            await js.delete_consumer(stream, durable)
-            logger.info("consumer deleted | %s", key)
-            report["dropped"]["consumers"].append(key)
+            await js.delete_consumer(c.stream_name, c.durable_name)
+            logger.info("consumer deleted | %s", c.key)
+            report["dropped"]["consumers"].append(c.key)
         except Exception as e:
-            logger.error("consumer delete failed | %s | %r", key, e)
-            report["errors"].append({"target": key, "error": repr(e)})
+            logger.error("consumer delete failed | %s | %r", c.key, e)
+            report["errors"].append({"target": c.key, "error": repr(e)})
 
     # ------------------------------------------------------------------
     # Step 2: Streams
     # ------------------------------------------------------------------
-    for s in streams_cfg:
-        name = s.get("name")
-        if not name:
-            logger.warning("invalid stream config | %s", s)
-            report["skipped"]["streams"].append(str(s))
-            continue
-
+    for s in expected.streams:
         try:
-            await js.stream_info(name)
+            await js.stream_info(s.stream_name)
         except Exception:
-            logger.info("stream not exists | %s", name)
-            report["skipped"]["streams"].append(name)
+            logger.info("stream not exists | %s", s.stream_name)
+            report["skipped"]["streams"].append(s.stream_name)
             continue
 
         try:
-            await js.delete_stream(name)
-            logger.info("stream deleted | %s", name)
-            report["dropped"]["streams"].append(name)
+            await js.delete_stream(s.stream_name)
+            logger.info("stream deleted | %s", s.stream_name)
+            report["dropped"]["streams"].append(s.stream_name)
         except Exception as e:
-            logger.error("stream delete failed | %s | %r", name, e)
-            report["errors"].append({"target": name, "error": repr(e)})
+            logger.error("stream delete failed | %s | %r", s.stream_name, e)
+            report["errors"].append({"target": s.stream_name, "error": repr(e)})
 
     if report["errors"]:
         logger.warning("reset finished with errors | trace_id=%s", report["trace_id"])

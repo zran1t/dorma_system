@@ -74,7 +74,6 @@ jetstream:
       filter_subject: "intra.dpt.data.kol.market_data_kol.sys.in"
       deliver_subject: "intra.dpt.data.kol.market_data_kol.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -85,7 +84,6 @@ jetstream:
       filter_subject: "intra.dpt.data.kol.derivatives_stats_kol.sys.in"
       deliver_subject: "intra.dpt.data.kol.derivatives_stats_kol.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -96,7 +94,6 @@ jetstream:
       filter_subject: "intra.dpt.data.kol.ref_data_kol.sys.in"
       deliver_subject: "intra.dpt.data.kol.ref_data_kol.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -107,6 +104,5 @@ jetstream:
       filter_subject: "intra.dpt.data.kol.account_data_kol.sys.in"
       deliver_subject: "intra.dpt.data.kol.account_data_kol.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]

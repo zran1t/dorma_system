@@ -3,21 +3,20 @@ File: infra_py/nats/js_bootstrap.py
 Module: infra_py.nats.js_bootstrap
 
 職責 (Responsibility):
-    提供 NATS 與 JetStream 拓樸之建立與對齊能力，
-    依 YAML 解析後之 dict 建立或更新 streams 與 consumers。
-    本模組負責「狀態收斂」，而非僅建立一次性資源。
+    提供 JetStream 拓樸之建立與對齊能力（狀態收斂）。
+    採用 expected_loader + actual_loader + diff 作為唯一治理管線，避免多處推導契約。
 
 注意事項 (Notes):
-    - duplicate_window 與 ack_wait 一律以秒數(float)傳入 JetStream API（避免型別不相容）。
-    - 若資源已存在，僅在設定差異時進行更新，避免不必要的控制面震盪。
-    - 本模組不負責刪除既有資源；刪除行為由 reset 工具負責。
+    - 本模組只負責 create/update，不負責 delete（delete 由 js_reset 負責）。
+    - 所有 duration 欄位一律以 seconds(float) 傳入 nats-py JetStream API（由 SDK 處理 ns 序列化）。
+    - consumer timing contract 由 ExpectedConsumer.timing 提供，bootstrap 不再做 override 推導。
+    - 不得依賴 system_initializer 或 application/domain 層模組。
 """
 
 from __future__ import annotations
 
 # === 標準函式庫 (Standard Library) ===
-import re
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional
 
 # === 第三方套件 (Third-Party Libraries) ===
 from nats.aio.client import Client as NATS
@@ -29,69 +28,203 @@ from nats.js.api import (
     DiscardPolicy,
     AckPolicy,
 )
+from nats.js.errors import BadRequestError
+from nats.js.errors import NotFoundError
 
 # === 系統內模組 (Internal Modules) ===
 from infra_py.logging.logger import get_logger
+from infra_py.nats.actual_loader import load_actual_topology
+from infra_py.nats.diff import diff_topology
+from infra_py.nats.duration import float_equal
+from infra_py.nats.expected_loader import build_expected_topology
 
 
-logger = get_logger(__name__, subdir="jetstream/bootstrap")
-
-# _DURATION_RE 解析 duration 字串用途說明。
-#
-# 功能:
-#     - 提供 duration 字串之最小可行解析能力（value + unit）。
-#     - 供 duplicate_window / ack_wait 轉換為秒數(float)使用。
-#
-# 契約 / 限制:
-#     - 僅接受單一數值與單一單位尾綴（例如 30s / 1500ms / 2m / 1h / 7d）。
-#     - 解析失敗時由上層回退至 default_seconds。
-_DURATION_RE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s*$")
+logger = get_logger(__name__)
 
 
-def _parse_duration_seconds(text: str | float | int, default_seconds: float) -> float:
+async def bootstrap_channels_topology(cfg: Dict[str, Any], nc: NATS) -> Any:
     """
-    _parse_duration_seconds 將多型時間表示轉換為秒數(float)。
+    bootstrap_channels_topology 收斂 JetStream 拓樸至期望狀態。
 
     功能:
-        - 支援秒數數值與字串型 duration（ms/s/m/h/d）。
-        - 解析失敗時回退至 default_seconds，確保 bootstrap 流程可持續執行。
+        - 依 cfg 建立 ExpectedTopology。
+        - 讀取 ActualTopology（expected-driven）。
+        - 產出 Diff 並執行 create/update 收斂。
 
     參數:
-        - text: 時間字串或數值；數值視為秒數。
-        - default_seconds: 解析失敗時使用之預設秒數。
+        - cfg: YAML mirror dict（需包含 jetstream 結構；已由 config_loader 驗證）。
+        - nc: 已連線之 NATS client（由上層管理生命週期）。
 
     回傳:
-        - result: 秒數(float)。
-        - error: 無。
+        - result: JetStream context（nc.jetstream()）。
+        - error: BadRequestError / 其他例外上拋。
 
     備註:
-        - JetStream Python client 部分欄位以秒數(float)表達，需避免傳入 timedelta 或非相容型別。
+        - 本函式不做 delete；如需清理殘留，請先執行 js_reset。
     """
-    if text is None:
-        return float(default_seconds)
-    if isinstance(text, (int, float)):
-        return float(text)
+    js = nc.jetstream()
 
-    s = str(text).strip().lower()
-    m = _DURATION_RE.match(s)
-    if not m:
-        return float(default_seconds)
+    expected = build_expected_topology(cfg)
 
-    val = float(m.group(1))
-    unit = (m.group(2) or "s").lower()
+    # 先嘗試讀現況（存在性由 try/except 控制），以決定 create/update；缺失在 create 路徑處理
+    # 若讀現況失敗（例如某些不存在），bootstrap 仍可進行 create；diff 的 missing 只用於 audit 報告。
+    actual = await _load_actual_best_effort(expected, nc)
 
-    if unit in ("s", "sec", "secs", "second", "seconds"):
-        return val
-    if unit in ("ms", "msec", "msecs", "millisecond", "milliseconds"):
-        return val / 1000.0
-    if unit in ("m", "min", "mins", "minute", "minutes"):
-        return val * 60.0
-    if unit in ("h", "hr", "hrs", "hour", "hours"):
-        return val * 3600.0
-    if unit in ("d", "day", "days"):
-        return val * 86400.0
+    diff = diff_topology(expected, actual)
 
-    return val
+    # ------------------------------------------------------------------
+    # Streams: create/update
+    # ------------------------------------------------------------------
+    for es in expected.streams:
+        sc = _to_stream_config(es)
+
+        if es.stream_name in diff.missing_streams:
+            await js.add_stream(sc)
+            logger.info("stream created | %s", es.stream_name)
+            continue
+
+        # 只在 mismatch 時 update，避免控制面震盪
+        if es.stream_name in diff.mismatched_streams:
+            await js.update_stream(sc)
+            logger.info("stream updated | %s", es.stream_name)
+        else:
+            logger.info("stream unchanged | %s", es.stream_name)
+
+    # ------------------------------------------------------------------
+    # Consumers: create/update
+    # ------------------------------------------------------------------
+    for ec in expected.consumers:
+        cc = _to_consumer_config(ec)
+
+        if ec.key in diff.missing_consumers:
+            try:
+                await js.add_consumer(ec.stream_name, cc)
+                logger.info("consumer created | %s | ack_wait=%ss", ec.key, float(ec.timing.ack_wait_seconds))
+                continue
+            except BadRequestError as e:
+                logger.error("consumer create bad request | %s | err=%r", ec.key, e)
+                raise
+
+        if ec.key in diff.mismatched_consumers:
+            await js.update_consumer(ec.stream_name, cc)
+            logger.info("consumer updated | %s | ack_wait=%ss", ec.key, float(ec.timing.ack_wait_seconds))
+        else:
+            logger.info("consumer unchanged | %s", ec.key)
+
+    return js
+
+
+async def _load_actual_best_effort(expected: Any, nc: NATS) -> Any:
+    """
+    _load_actual_best_effort 以 best-effort 方式載入 ActualTopology。
+
+    功能:
+        - 避免因部分資源缺失導致 bootstrap 無法進行 create。
+        - 對於缺失資源，略過並交由 diff 判定 missing。
+
+    參數:
+        - expected: ExpectedTopology。
+        - nc: NATS client。
+
+    回傳:
+        - result: ActualTopology（可能缺少部分項目）。
+        - error: 無（僅在不可恢復的查詢錯誤時上拋）。
+
+    備註:
+        - 這是 bootstrap 的實務防衛；auditor 會使用完整讀取（缺失會被 report）。
+    """
+    js = nc.jetstream()
+
+    streams = []
+    for s in expected.streams:
+        try:
+            # 讓 actual_loader 做統一解碼，但這裡無法逐個呼叫；因此直接交給 actual_loader
+            pass
+        except Exception:
+            pass
+
+    try:
+        return await load_actual_topology(expected, nc)
+    except NotFoundError:
+        # reset 後 / 初次 bootstrap 的正常路徑
+        logger.info(
+            "actual topology not found; treat as empty and bootstrap from scratch"
+        )
+        from infra_py.nats.model import ActualTopology
+        return ActualTopology(streams=[], consumers=[])
+    except Exception as e:
+        # 真正不預期的錯誤
+        logger.warning(
+            "load actual topology failed; fallback to empty actual | err=%r", e
+        )
+        from infra_py.nats.model import ActualTopology
+        return ActualTopology(streams=[], consumers=[])
+
+
+def _to_stream_config(es: Any) -> StreamConfig:
+    """
+    _to_stream_config 將 ExpectedStream 映射為 StreamConfig。
+
+    功能:
+        - 將治理層模型轉為 nats-py StreamConfig，供 add/update 使用。
+
+    參數:
+        - es: ExpectedStream。
+
+    回傳:
+        - result: StreamConfig。
+        - error: ValueError（當 enum 值不支援）。
+
+    備註:
+        - max_age_seconds=None 表示不設定（保留 server default）；因此不傳入 max_age。
+    """
+    kwargs: Dict[str, Any] = {
+        "name": es.stream_name,
+        "subjects": list(es.subjects),
+        "storage": _map_storage(es.storage),
+        "retention": _map_retention(es.retention),
+        "discard": _map_discard(es.discard),
+        "duplicate_window": float(es.duplicate_window_seconds),
+    }
+
+    if es.max_age_seconds is not None:
+        kwargs["max_age"] = float(es.max_age_seconds)
+
+    return StreamConfig(**kwargs)
+
+
+def _to_consumer_config(ec: Any) -> ConsumerConfig:
+    """
+    _to_consumer_config 將 ExpectedConsumer 映射為 ConsumerConfig。
+
+    功能:
+        - 將治理層模型轉為 nats-py ConsumerConfig，供 add/update 使用。
+
+    參數:
+        - ec: ExpectedConsumer。
+
+    回傳:
+        - result: ConsumerConfig。
+        - error: ValueError（當 enum 值不支援）。
+
+    備註:
+        - timing contract：ACK_WAIT 模式不傳 backoff；BACKOFF 模式傳 backoff 並傳 ack_wait_seconds（等於 backoff[0]）。
+    """
+    kwargs: Dict[str, Any] = {
+        "durable_name": ec.durable_name,
+        "filter_subject": ec.filter_subject,
+        "deliver_subject": ec.deliver_subject,
+        "ack_policy": _map_ack_policy(ec.ack_policy),
+        "ack_wait": float(ec.timing.ack_wait_seconds),
+    }
+
+    if ec.max_deliver is not None:
+        kwargs["max_deliver"] = int(ec.max_deliver)
+
+    if ec.timing.backoff_seconds is not None:
+        kwargs["backoff"] = list(ec.timing.backoff_seconds)
+
+    return ConsumerConfig(**kwargs)
 
 
 def _map_storage(v: str) -> StorageType:
@@ -99,7 +232,7 @@ def _map_storage(v: str) -> StorageType:
     _map_storage 將 YAML storage 字串映射為 StorageType。
 
     功能:
-        - 將 "file" / "memory" 映射為 JetStream StorageType。
+        - 將 "file"/"memory" 映射為 JetStream StorageType。
 
     參數:
         - v: YAML storage 值。
@@ -109,7 +242,7 @@ def _map_storage(v: str) -> StorageType:
         - error: 無。
 
     備註:
-        - 未識別值視為 MEMORY，以降低不可用配置造成的啟動中斷風險。
+        - 未識別值視為 MEMORY；若需 fail-fast 可在 config_loader 加強約束。
     """
     return StorageType.FILE if str(v).lower() == "file" else StorageType.MEMORY
 
@@ -119,7 +252,7 @@ def _map_retention(v: str) -> RetentionPolicy:
     _map_retention 將 YAML retention 字串映射為 RetentionPolicy。
 
     功能:
-        - 將常用 retention 值映射為 JetStream RetentionPolicy。
+        - 將 "limits"/"interest"/"workqueue" 映射為 JetStream RetentionPolicy。
 
     參數:
         - v: YAML retention 值。
@@ -129,7 +262,7 @@ def _map_retention(v: str) -> RetentionPolicy:
         - error: 無。
 
     備註:
-        - 未識別值回退至 LIMITS 以保持行為可預期。
+        - 未識別值回退至 LIMITS。
     """
     s = str(v).lower()
     if s == "interest":
@@ -144,7 +277,7 @@ def _map_discard(v: str) -> DiscardPolicy:
     _map_discard 將 YAML discard 字串映射為 DiscardPolicy。
 
     功能:
-        - 將常用 discard 值映射為 JetStream DiscardPolicy。
+        - 將 "old"/"new" 映射為 JetStream DiscardPolicy。
 
     參數:
         - v: YAML discard 值。
@@ -152,136 +285,32 @@ def _map_discard(v: str) -> DiscardPolicy:
     回傳:
         - result: DiscardPolicy。
         - error: 無。
-
-    備註:
-        - 未識別值回退至 NEW 以保持行為可預期。
     """
     return DiscardPolicy.OLD if str(v).lower() == "old" else DiscardPolicy.NEW
 
 
-async def bootstrap_nats_and_js(cfg: Dict[str, Any]) -> Tuple[NATS, Any]:
+def _map_ack_policy(v: str) -> AckPolicy:
     """
-    bootstrap_nats_and_js 建立並對齊 NATS 與 JetStream 狀態。
+    _map_ack_policy 將 YAML ack_policy 字串映射為 AckPolicy。
 
     功能:
-        - 建立 NATS 連線並取得 JetStream context。
-        - 依 cfg 內容建立或更新 streams（必要時 update）。
-        - 依 cfg 內容建立或更新 consumers（必要時 update）。
+        - 將 explicit/none/all 映射為 JetStream AckPolicy enum。
 
     參數:
-        - cfg: YAML mirror dict（需包含 nats / jetstream 結構）。
+        - v: YAML ack_policy 字串。
 
     回傳:
-        - result: (NATS client, JetStream context)。
-        - error: 無。
+        - result: AckPolicy enum。
+        - error: ValueError（未知值）。
 
     備註:
-        - 本函式不刪除任何既有資源；僅做「建立或更新」以收斂狀態。
-        - 更新行為僅在偵測到差異時執行，避免因重覆 update 造成控制面不穩定。
+        - config_loader 已約束值域；此處仍保留 fail-fast 防衛。
     """
-    nats_cfg = cfg.get("nats") or {}
-    servers = nats_cfg.get("servers")
-
-    if not isinstance(servers, list) or not servers:
-        raise ValueError("nats.servers must be non-empty list")
-
-    # 建立連線以取得 JetStream context，作為後續拓樸收斂之唯一控制面入口。
-    logger.info("connecting nats | servers=%s", servers)
-
-    nc = NATS()
-    await nc.connect(servers=servers)
-    js = nc.jetstream()
-
-    js_cfg = cfg.get("jetstream") or {}
-
-    # ------------------------------------------------------------------
-    # Streams
-    # ------------------------------------------------------------------
-    streams = js_cfg.get("streams") or []
-    for s in streams:
-        name = s.get("name")
-        subjects = s.get("subjects") or []
-
-        if not name or not subjects:
-            raise ValueError(f"invalid stream config | {s}")
-
-        sc = StreamConfig(
-            name=name,
-            subjects=subjects,
-            storage=_map_storage(s.get("storage", "file")),
-            retention=_map_retention(s.get("retention", "limits")),
-            discard=_map_discard(s.get("discard", "old")),
-            # 以秒數(float)提供 duplicate_window，避免型別不相容造成的建立/更新失敗。
-            duplicate_window=_parse_duration_seconds(s.get("duplicates", "30s"), 30.0),
-        )
-
-        try:
-            await js.add_stream(sc)
-            logger.info("stream created | %s", name)
-        except Exception:
-            info = await js.stream_info(name)
-
-            # 僅在核心欄位差異時更新，以維持控制面操作的最小化與可預期性。
-            need_update = (
-                set(info.config.subjects or []) != set(sc.subjects or [])
-                or info.config.storage != sc.storage
-                or info.config.retention != sc.retention
-                or info.config.discard != sc.discard
-                or float(info.config.duplicate_window or 0) != float(sc.duplicate_window or 0)
-            )
-
-            if need_update:
-                await js.update_stream(sc)
-                logger.info("stream updated | %s", name)
-            else:
-                logger.info("stream unchanged | %s", name)
-
-    # ------------------------------------------------------------------
-    # Consumers
-    # ------------------------------------------------------------------
-    consumers = js_cfg.get("consumers") or []
-    for c in consumers:
-        stream = c.get("stream")
-        durable = c.get("durable_name")
-        filter_subject = c.get("filter_subject")
-        deliver_subject = c.get("deliver_subject")
-
-        if not all([stream, durable, filter_subject, deliver_subject]):
-            raise ValueError(f"invalid consumer config | {c}")
-
-        ack_policy = (
-            AckPolicy.EXPLICIT
-            if str(c.get("ack_policy", "explicit")).lower() == "explicit"
-            else AckPolicy.NONE
-        )
-
-        cc = ConsumerConfig(
-            durable_name=durable,
-            filter_subject=filter_subject,
-            deliver_subject=deliver_subject,
-            ack_policy=ack_policy,
-            # 以秒數(float)提供 ack_wait，避免型別不相容造成的建立/更新失敗。
-            ack_wait=_parse_duration_seconds(c.get("ack_wait", "30s"), 30.0),
-        )
-
-        try:
-            await js.add_consumer(stream, cc)
-            logger.info("consumer created | %s@%s", durable, stream)
-        except Exception:
-            info = await js.consumer_info(stream, durable)
-
-            # 僅在核心欄位差異時更新，以維持 consumer delivery contract 的穩定性。
-            need_update = (
-                info.config.filter_subject != cc.filter_subject
-                or info.config.deliver_subject != cc.deliver_subject
-                or info.config.ack_policy != cc.ack_policy
-                or float(info.config.ack_wait or 0) != float(cc.ack_wait or 0)
-            )
-
-            if need_update:
-                await js.update_consumer(stream, cc)
-                logger.info("consumer updated | %s@%s", durable, stream)
-            else:
-                logger.info("consumer unchanged | %s@%s", durable, stream)
-
-    return nc, js
+    s = str(v).strip().lower()
+    if s == "explicit":
+        return AckPolicy.EXPLICIT
+    if s == "none":
+        return AckPolicy.NONE
+    if s == "all":
+        return AckPolicy.ALL
+    raise ValueError(f"invalid ack_policy: {v}")

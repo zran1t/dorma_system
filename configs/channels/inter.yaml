@@ -52,7 +52,6 @@ jetstream:
       filter_subject: "inter.dpt.data.sys.in"
       deliver_subject: "inter.dpt.data.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -63,7 +62,6 @@ jetstream:
       filter_subject: "inter.dpt.state.sys.in"
       deliver_subject: "inter.dpt.state.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -74,7 +72,6 @@ jetstream:
       filter_subject: "inter.dpt.strategy.sys.in"
       deliver_subject: "inter.dpt.strategy.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -85,7 +82,6 @@ jetstream:
       filter_subject: "inter.dpt.risk.sys.in"
       deliver_subject: "inter.dpt.risk.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
@@ -96,6 +92,5 @@ jetstream:
       filter_subject: "inter.dpt.execution.sys.in"
       deliver_subject: "inter.dpt.execution.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
       max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]

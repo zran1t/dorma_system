@@ -5,28 +5,7 @@
 ├── cmd
 │   └── preset
 │       └── main.go
-├── common
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   ├── __init__.cpython-311.pyc
-│   │   ├── bus_config.cpython-311.pyc
-│   │   ├── bus_runtime.cpython-311.pyc
-│   │   ├── channel_config_loader.cpython-311.pyc
-│   │   ├── js_auditor.cpython-311.pyc
-│   │   ├── js_reset.cpython-311.pyc
-│   │   ├── nats_bootstrap.cpython-311.pyc
-│   │   ├── nats_comm.cpython-311.pyc
-│   │   ├── redis_cfg.cpython-311.pyc
-│   │   └── subject_resolver.cpython-311.pyc
-│   ├── channel_config_loader.py
-│   ├── js_auditor.py
-│   ├── js_reset.py
-│   ├── nats_bootstrap.py
-│   ├── nats_comm.py
-│   └── subject_resolver.py
 ├── configs
-│   ├── addressbook
-│   │   └── comm_rooms.yaml
 │   ├── channels
 │   │   ├── inter.yaml
 │   │   └── intra.yaml
@@ -159,12 +138,36 @@
 │           ├── collect_base_test.go
 │           └── types.go
 ├── infra_py
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-311.pyc
 │   ├── logging
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── logger.cpython-311.pyc
 │   │   └── logger.py
 │   ├── nats
+│   │   ├── README.md
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── config_loader.cpython-311.pyc
+│   │   │   ├── js_auditor.cpython-311.pyc
+│   │   │   ├── js_bootstrap.cpython-311.pyc
+│   │   │   ├── js_reset.cpython-311.pyc
+│   │   │   ├── test_config_loader.cpython-311-pytest-9.0.2.pyc
+│   │   │   ├── test_js_auditor.cpython-311-pytest-8.3.2.pyc
+│   │   │   ├── test_js_auditor.cpython-311-pytest-9.0.2.pyc
+│   │   │   ├── test_js_bootstrap.cpython-311-pytest-8.3.2.pyc
+│   │   │   └── test_js_bootstrap.cpython-311-pytest-9.0.2.pyc
+│   │   ├── config_loader.py
 │   │   ├── js_auditor.py
 │   │   ├── js_bootstrap.py
-│   │   └── js_reset.py
+│   │   ├── js_reset.py
+│   │   ├── test_config_loader.py
+│   │   ├── test_js_auditor.py
+│   │   └── test_js_bootstrap.py
 │   └── redis
 ├── injector_api
 │   ├── __init__.py
@@ -195,6 +198,10 @@
 │       │   └── service_entry.cpython-311.pyc
 │       ├── nats_publisher.py
 │       └── service_entry.py
+├── logs
+│   └── system_initializer
+│       └── nats_bootstrap
+│           └── infra.log
 ├── observability_dpt
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
@@ -203,6 +210,7 @@
 │   ├── PROJECT_TREE.txt
 │   ├── PYTHON_COMMENT_TEMPLATE.md
 │   ├── README_PACKAGE_TEMPLATE.md
+│   ├── REFACTOR_BACKLOG.md
 │   ├── System Architecture Diagram
 │   │   ├── v1.0.drawio
 │   │   ├── v2.0.drawio
@@ -211,7 +219,7 @@
 │   │   ├── v3.1.drawio
 │   │   ├── v4.0.drawio
 │   │   └── v5.0.drawio
-│   └── refactor_backlog.md
+│   └── TO_DO.txt
 ├── pytest.ini
 ├── requirements-dev.in
 ├── requirements-dev.txt
@@ -245,19 +253,28 @@
 │   │   └── rust
 │   └── proto
 │       ├── envelope
-│       └── market
-│           ├── common
+│       ├── market
+│       │   ├── common
+│       │   │   ├── CHANGELOG.md
+│       │   │   └── v1
+│       │   │       └── market_common.proto
+│       │   ├── kline
+│       │   │   ├── CHANGELOG.md
+│       │   │   └── v1
+│       │   │       └── market_kline.proto
+│       │   └── stream
+│       │       ├── CHANGELOG.md
+│       │       └── v1
+│       │           └── market_stream.proto
+│       └── system
+│           ├── control
 │           │   ├── CHANGELOG.md
 │           │   └── v1
-│           │       └── market_common.proto
-│           ├── kline
-│           │   ├── CHANGELOG.md
-│           │   └── v1
-│           │       └── market_kline.proto
-│           └── stream
+│           │       └── system_control.proto
+│           └── runtime
 │               ├── CHANGELOG.md
 │               └── v1
-│                   └── market_stream.proto
+│                   └── unit_runtime.proto
 ├── scripts
 │   ├── README.md
 │   ├── nats_start_all.sh
@@ -267,7 +284,6 @@
 │   ├── redis_status_check.sh
 │   └── redis_stop_all.sh
 ├── start_inject_api.py
-├── start_system.py
 ├── state_dpt
 │   ├── comm_room
 │   ├── dispatch_room
@@ -277,23 +293,16 @@
 │   ├── dpt_dispatch_room
 │   └── kols
 ├── system_initializer
+│   ├── __pycache__
+│   │   └── main.cpython-311.pyc
 │   ├── main.py
 │   └── steps
 │       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   └── nats_bootstrap.cpython-311.pyc
 │       └── nats_bootstrap.py
-├── tests
-│   ├── conftest.py
-│   ├── lf_hf_market_data_sniffer
-│   │   └── main.go
-│   ├── test_channel_loader.py
-│   ├── test_js_bootstrap.py
-│   ├── test_js_reset.py
-│   ├── test_tools_bootstrap_2steps.py
-│   └── test_tools_bootstrap_3steps.py
-└── tools
-    ├── __pycache__
-    │   └── runtime_bootstrap.cpython-311.pyc
-    ├── checkdoc.go
-    └── runtime_bootstrap.py
+└── utils
+    └── checkdoc.go
 
-121 directories, 176 files
+128 directories, 178 files
