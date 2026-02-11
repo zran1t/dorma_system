@@ -8,15 +8,16 @@ cd "$ROOT_DIR"
 # 防止有系統層的 brew service 佔住埠
 brew services stop redis >/dev/null 2>&1 || true
 
-mkdir -p redis_data/{capital,kline,order,position,strategy}
+mkdir -p redis_data/{capital,kline,order,position,strategy,state}
 mkdir -p logs/redis
 
 CONFIGS=(
-  "configs/redis/redis_capital_pool.conf"
-  "configs/redis/redis_kline_pool.conf"
-  "configs/redis/redis_order_pool.conf"
-  "configs/redis/redis_position_pool.conf"
-  "configs/redis/redis_strategy_pool.conf"
+  "configs/redis/capital_pool.conf"
+  "configs/redis/kline_pool.conf"
+  "configs/redis/order_pool.conf"
+  "configs/redis/position_pool.conf"
+  "configs/redis/strategy_pool.conf"
+  "config/redis/state_pool.conf"
 )
 
 for conf in "${CONFIGS[@]}"; do

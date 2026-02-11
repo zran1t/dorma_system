@@ -12,11 +12,12 @@
 │   ├── nats
 │   │   └── server.conf
 │   ├── redis
-│   │   ├── redis_capital_pool.conf
-│   │   ├── redis_kline_pool.conf
-│   │   ├── redis_order_pool.conf
-│   │   ├── redis_position_pool.conf
-│   │   └── redis_strategy_pool.conf
+│   │   ├── capital_pool.conf
+│   │   ├── kline_pool.conf
+│   │   ├── order_pool.conf
+│   │   ├── position_pool.conf
+│   │   ├── state_pool.conf
+│   │   └── strategy_pool.conf
 │   ├── symbol_mapping
 │   │   ├── binance.yaml
 │   │   └── okx.yaml
@@ -149,22 +150,33 @@
 │   │   └── logger.py
 │   ├── nats
 │   │   ├── README.md
+│   │   ├── RF.md
 │   │   ├── __init__.py
 │   │   ├── __pycache__
 │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── actual_loader.cpython-311.pyc
 │   │   │   ├── config_loader.cpython-311.pyc
+│   │   │   ├── diff.cpython-311.pyc
+│   │   │   ├── duration.cpython-311.pyc
+│   │   │   ├── expected_loader.cpython-311.pyc
 │   │   │   ├── js_auditor.cpython-311.pyc
 │   │   │   ├── js_bootstrap.cpython-311.pyc
 │   │   │   ├── js_reset.cpython-311.pyc
+│   │   │   ├── model.cpython-311.pyc
 │   │   │   ├── test_config_loader.cpython-311-pytest-9.0.2.pyc
 │   │   │   ├── test_js_auditor.cpython-311-pytest-8.3.2.pyc
 │   │   │   ├── test_js_auditor.cpython-311-pytest-9.0.2.pyc
 │   │   │   ├── test_js_bootstrap.cpython-311-pytest-8.3.2.pyc
 │   │   │   └── test_js_bootstrap.cpython-311-pytest-9.0.2.pyc
+│   │   ├── actual_loader.py
 │   │   ├── config_loader.py
+│   │   ├── diff.py
+│   │   ├── duration.py
+│   │   ├── expected_loader.py
 │   │   ├── js_auditor.py
 │   │   ├── js_bootstrap.py
 │   │   ├── js_reset.py
+│   │   ├── model.py
 │   │   ├── test_config_loader.py
 │   │   ├── test_js_auditor.py
 │   │   └── test_js_bootstrap.py
@@ -200,8 +212,7 @@
 │       └── service_entry.py
 ├── logs
 │   └── system_initializer
-│       └── nats_bootstrap
-│           └── infra.log
+│       └── system_initializer_2026-02-08T09-36-38Z_9f7ab684.log
 ├── observability_dpt
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
@@ -221,6 +232,9 @@
 │   │   └── v5.0.drawio
 │   └── TO_DO.txt
 ├── pytest.ini
+├── reports
+│   └── js_auditor
+│       └── js_audit_2026-02-08T09-36-38Z.json
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -300,9 +314,11 @@
 │       ├── __init__.py
 │       ├── __pycache__
 │       │   ├── __init__.cpython-311.pyc
+│       │   ├── logging_setup.cpython-311.pyc
 │       │   └── nats_bootstrap.cpython-311.pyc
+│       ├── logging_setup.py
 │       └── nats_bootstrap.py
 └── utils
     └── checkdoc.go
 
-128 directories, 178 files
+129 directories, 193 files
