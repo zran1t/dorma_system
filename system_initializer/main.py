@@ -9,6 +9,7 @@ Module: system_initializer.main
 注意事項 (Notes):
     - 本模組只做流程 orchestration，不包含任何 infra 細節。
     - logging 必須在任何 step 執行前初始化完成。
+    - 初始化流程策略=B：會先 stop 舊 nats-server 再重新啟動（避免舊狀態污染）。
     - 任一步驟失敗將中止整體初始化流程。
     - 不得被 infra 層依賴。
 """
@@ -22,12 +23,11 @@ from typing import Optional
 
 # === 系統內模組 (Internal Modules) ===
 from system_initializer.logger import bootstrap_logger, get_logger
-from system_initializer.steps.nats_bootstrap import (
-    NatsBootstrapOptions,
-    run_nats_bootstrap,
-)
+from system_initializer.steps.nats_bootstrap import NatsBootstrapOptions, run_nats_bootstrap
+from system_initializer.steps.nats_server_runtime import NatsServerRuntimeOptions, restart_nats_server
+
 # from system_initializer.steps.redis_bootstrap import run_redis_bootstrap
-# from system_initializer.steps.xxx_bootstrap import run_xxx_bootstrap
+# from system_initializer.steps.redis_server_runtime import restart_redis_server
 
 
 async def run_initializer() -> int:
@@ -47,60 +47,70 @@ async def run_initializer() -> int:
 
     備註:
         - 初始化順序應保持穩定，避免隱性依賴反轉。
-        - 若日後新增 step，應明確標示其相依順序。
+        - NATS server runtime 與 JetStream topology bootstrap 必須分離（錯誤語意不同）。
     """
     logger = get_logger(__name__)
 
     try:
-        logger.info("event=initializer_start")
+        logger.info("system initializer start")
 
         # ------------------------------------------------------------------
-        # Step 1: NATS JetStream Topology (inter/intra)
+        # Step 0: NATS Server Runtime (stop → start → ready)
         # ------------------------------------------------------------------
-        nats_configs = [
-            ("inter", "configs/channels/inter.yaml"),
-            ("intra", "configs/channels/intra.yaml"),
-        ]
+        restart_nats_server(
+            NatsServerRuntimeOptions(
+                conf_path="configs/nats/server.conf",
+                # enable_http_probe=True  # [若 conf 有 http: <port>，會補做 /varz probe。]
+            )
+        )
+        logger.info("nats server runtime ready")
 
-        for scope, config_path in nats_configs:
-            logger.info("event=nats_scope_start | scope=%s | config=%s", scope, config_path)
-
-            nats_opts = NatsBootstrapOptions(
-                config_path=config_path,
+        # ------------------------------------------------------------------
+        # Step 1: NATS JetStream Topology (inter)
+        # ------------------------------------------------------------------
+        inter_report = await run_nats_bootstrap(
+            NatsBootstrapOptions(
+                config_path="configs/channels/inter.yaml",
                 do_reset=True,
                 do_bootstrap=True,
                 do_audit=True,
-                # trace_id 不用傳：會自動用 logger context 的 trace_id
             )
-
-            nats_report = await run_nats_bootstrap(nats_opts)
-
-            if not nats_report.get("ok", False):
-                logger.error("event=nats_scope_failed | scope=%s", scope)
-                return 1
-
-            logger.info("event=nats_scope_done | scope=%s", scope)
-
-        logger.info("event=nats_all_done")
+        )
+        if not inter_report.get("ok", False):
+            logger.error("nats bootstrap failed | scope=inter")
+            return 1
+        logger.info("nats bootstrap finished | scope=inter")
 
         # ------------------------------------------------------------------
-        # Step 2: Redis (預留)
+        # Step 2: NATS JetStream Topology (intra)
         # ------------------------------------------------------------------
+        intra_report = await run_nats_bootstrap(
+            NatsBootstrapOptions(
+                config_path="configs/channels/intra.yaml",
+                do_reset=True,
+                do_bootstrap=True,
+                do_audit=True,
+            )
+        )
+        if not intra_report.get("ok", False):
+            logger.error("nats bootstrap failed | scope=intra")
+            return 1
+        logger.info("nats bootstrap finished | scope=intra")
+
+        # ------------------------------------------------------------------
+        # Step 3: Redis (預留)
+        # ------------------------------------------------------------------
+        # restart_redis_server(...)
         # redis_report = await run_redis_bootstrap(...)
         # if not redis_report.get("ok", False):
-        #     logger.error("event=redis_failed")
+        #     logger.error("redis bootstrap failed")
         #     return 1
 
-        # ------------------------------------------------------------------
-        # Step 3: Other Initialization (預留)
-        # ------------------------------------------------------------------
-        # await run_xxx_bootstrap(...)
-
-        logger.info("event=initializer_done")
+        logger.info("system initializer completed")
         return 0
 
     except Exception as e:
-        logger.exception("event=initializer_crash | err=%r", e)
+        logger.exception("initializer crashed | err=%r", e)
         return 1
 
 
@@ -124,7 +134,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     """
     _ = argv  # [保留參數介面以利未來擴充，避免破壞呼叫契約。]
 
+    # [在任何 step 執行前建立唯一的 per-run log 檔案，確保可觀測性收斂。]
     bootstrap_logger()
+
     return asyncio.run(run_initializer())
 
 
