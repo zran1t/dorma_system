@@ -7,11 +7,13 @@ Module: system_initializer.logger
     以「單次啟動(trace) → 單一 log 檔案」作為唯一輸出模型。
 
 注意事項 (Notes):
-    - log 目錄固定為 logs/system_initializer/
-    - 每次 bootstrap 建立單一 per-run 檔案，所有模組共享 root handlers
+    - log 目錄固定為 logs/system_initializer/runs/<timestamp>_<trace_short>/
+    - 每次 bootstrap 建立單一 run 資料夾
+    - 所有 runtime artifacts (pid/log) 皆落於該 run_dir 底下
     - 使用 UTC 時間戳，避免跨時區混亂
     - 僅允許 bootstrap 一次；重複呼叫回傳相同 log_file
     - 不提供通用 logging 抽象；此模組只服務 system_initializer
+    - system_initializer 為一次性 orchestrator；所有 runtime artifacts 僅對該 run 有效。
 """
 
 from __future__ import annotations
@@ -47,6 +49,7 @@ class LoggerContext:
     欄位說明:
         - trace_id: 本次啟動識別碼，用於 log record 注入與檔名。
         - log_file: 本次啟動 log 檔完整路徑。
+        - run_dir: 本次初始化 artifacts 根目錄（所有 runtime process 皆落於此）
 
     契約 / 限制:
         - 一個 process 只允許存在一個 active context。
@@ -56,6 +59,7 @@ class LoggerContext:
     """
     trace_id: str
     log_file: Path
+    run_dir: Path
 
 
 class _TraceIdFilter(logging.Filter):
@@ -114,11 +118,14 @@ def bootstrap_logger(
     resolved_trace_id = (trace_id or os.urandom(8).hex()).strip()
 
     # [固定輸出位置以降低決策分散；system_initializer 為唯一 log owner。]
-    log_dir = Path("logs/system_initializer")
-    log_dir.mkdir(parents=True, exist_ok=True)
-
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
-    log_file = log_dir / f"system_initializer_{ts}_{resolved_trace_id[:8]}.log"
+    short_id = resolved_trace_id[:8]
+
+    run_folder_name = f"{ts}_{short_id}"
+    base_dir = Path("logs/system_initializer/runs") / run_folder_name
+    base_dir.mkdir(parents=True, exist_ok=True)
+
+    log_file = base_dir / "system_initializer.log"
 
     # [root logger 為唯一收斂點；所有模組 logger 透過 propagate 匯入單一輸出。]
     root = logging.getLogger()
@@ -128,7 +135,7 @@ def bootstrap_logger(
     for h in list(root.handlers):
         root.removeHandler(h)
 
-    fmt = "%(asctime)s | %(levelname)s | trace=%(trace_id)s | %(name)s | %(message)s"
+    fmt = "%(asctime)s | %(levelname)s | %(name)s | trace_id=%(trace_id)s | %(message)s"
     formatter = logging.Formatter(fmt=fmt, datefmt="%Y-%m-%dT%H:%M:%SZ")
     formatter.converter = time.gmtime  # 強制 UTC
 
@@ -145,7 +152,11 @@ def bootstrap_logger(
         sh.addFilter(trace_filter)
         root.addHandler(sh)
 
-    _CTX = LoggerContext(trace_id=resolved_trace_id, log_file=log_file)
+    _CTX = LoggerContext(
+        trace_id=resolved_trace_id,
+        log_file=log_file,
+        run_dir=base_dir,
+    )
     _BOOTSTRAPPED = True
 
     logging.getLogger(__name__).info(
@@ -191,3 +202,17 @@ def current_context() -> Optional[LoggerContext]:
         - error: 無。
     """
     return _CTX
+
+def run_dir() -> Path:
+    """
+    功能:
+        - run_dir 回傳本次啟動(run)的 artifacts 根目錄。
+        - e.g. logs/system_initializer/runs/2026-02-13T15-04-21Z_ab12cd34/
+
+    備註:
+        - 此目錄由 bootstrap_logger 建立，為所有 runtime artifacts 的根目錄。
+    """
+    ctx = current_context()
+    if ctx is None:
+        raise RuntimeError("logger not bootstrapped: run_dir unavailable")
+    return ctx.run_dir

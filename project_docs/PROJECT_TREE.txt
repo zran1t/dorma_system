@@ -12,12 +12,12 @@
 │   ├── nats
 │   │   └── server.conf
 │   ├── redis
-│   │   ├── capital_pool.conf
-│   │   ├── kline_pool.conf
-│   │   ├── order_pool.conf
-│   │   ├── position_pool.conf
-│   │   ├── state_pool.conf
-│   │   └── strategy_pool.conf
+│   │   ├── capital.conf
+│   │   ├── kline.conf
+│   │   ├── order.conf
+│   │   ├── position.conf
+│   │   ├── state.conf
+│   │   └── strategy.conf
 │   ├── symbol_mapping
 │   │   ├── binance.yaml
 │   │   └── okx.yaml
@@ -85,6 +85,14 @@
 │           ├── kol_chief
 │           ├── kol_comm_room
 │           └── kol_dispatch_room
+├── dev_scripts
+│   ├── README.md
+│   ├── nats_start_all.sh
+│   ├── nats_status_check.sh
+│   ├── nats_stop_all.sh
+│   ├── redis_start_all.sh
+│   ├── redis_status_check.sh
+│   └── redis_stop_all.sh
 ├── execution_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
@@ -138,49 +146,6 @@
 │           ├── collect_base.go
 │           ├── collect_base_test.go
 │           └── types.go
-├── infra_py
-│   ├── __init__.py
-│   ├── __pycache__
-│   │   └── __init__.cpython-311.pyc
-│   ├── logging
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── __init__.cpython-311.pyc
-│   │   │   └── logger.cpython-311.pyc
-│   │   └── logger.py
-│   ├── nats
-│   │   ├── README.md
-│   │   ├── RF.md
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── __init__.cpython-311.pyc
-│   │   │   ├── actual_loader.cpython-311.pyc
-│   │   │   ├── config_loader.cpython-311.pyc
-│   │   │   ├── diff.cpython-311.pyc
-│   │   │   ├── duration.cpython-311.pyc
-│   │   │   ├── expected_loader.cpython-311.pyc
-│   │   │   ├── js_auditor.cpython-311.pyc
-│   │   │   ├── js_bootstrap.cpython-311.pyc
-│   │   │   ├── js_reset.cpython-311.pyc
-│   │   │   ├── model.cpython-311.pyc
-│   │   │   ├── test_config_loader.cpython-311-pytest-9.0.2.pyc
-│   │   │   ├── test_js_auditor.cpython-311-pytest-8.3.2.pyc
-│   │   │   ├── test_js_auditor.cpython-311-pytest-9.0.2.pyc
-│   │   │   ├── test_js_bootstrap.cpython-311-pytest-8.3.2.pyc
-│   │   │   └── test_js_bootstrap.cpython-311-pytest-9.0.2.pyc
-│   │   ├── actual_loader.py
-│   │   ├── config_loader.py
-│   │   ├── diff.py
-│   │   ├── duration.py
-│   │   ├── expected_loader.py
-│   │   ├── js_auditor.py
-│   │   ├── js_bootstrap.py
-│   │   ├── js_reset.py
-│   │   ├── model.py
-│   │   ├── test_config_loader.py
-│   │   ├── test_js_auditor.py
-│   │   └── test_js_bootstrap.py
-│   └── redis
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
@@ -211,8 +176,13 @@
 │       ├── nats_publisher.py
 │       └── service_entry.py
 ├── logs
+│   ├── nats.out
 │   └── system_initializer
-│       └── system_initializer_2026-02-08T09-36-38Z_9f7ab684.log
+│       ├── nats-server.pid
+│       ├── system_initializer_2026-02-12T08-47-10Z_9ccd2509.log
+│       ├── system_initializer_2026-02-12T09-00-22Z_837f152d.log
+│       ├── system_initializer_2026-02-12T09-01-30Z_c5f5744f.log
+│       └── system_initializer_2026-02-12T09-02-12Z_c94bea23.log
 ├── observability_dpt
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
@@ -234,7 +204,10 @@
 ├── pytest.ini
 ├── reports
 │   └── js_auditor
-│       └── js_audit_2026-02-08T09-36-38Z.json
+│       ├── js_audit_2026-02-12T08-47-10Z.json
+│       ├── js_audit_2026-02-12T09-00-23Z.json
+│       ├── js_audit_2026-02-12T09-01-30Z.json
+│       └── js_audit_2026-02-12T09-02-13Z.json
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -289,14 +262,6 @@
 │               ├── CHANGELOG.md
 │               └── v1
 │                   └── unit_runtime.proto
-├── scripts
-│   ├── README.md
-│   ├── nats_start_all.sh
-│   ├── nats_status_check.sh
-│   ├── nats_stop_all.sh
-│   ├── redis_start_all.sh
-│   ├── redis_status_check.sh
-│   └── redis_stop_all.sh
 ├── start_inject_api.py
 ├── state_dpt
 │   ├── comm_room
@@ -307,18 +272,25 @@
 │   ├── dpt_dispatch_room
 │   └── kols
 ├── system_initializer
+│   ├── __init__.py
 │   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── logger.cpython-311.pyc
 │   │   └── main.cpython-311.pyc
+│   ├── logger.py
 │   ├── main.py
 │   └── steps
 │       ├── __init__.py
 │       ├── __pycache__
 │       │   ├── __init__.cpython-311.pyc
 │       │   ├── logging_setup.cpython-311.pyc
-│       │   └── nats_bootstrap.cpython-311.pyc
-│       ├── logging_setup.py
-│       └── nats_bootstrap.py
+│       │   ├── nats_bootstrap.cpython-311.pyc
+│       │   └── nats_server_runtime.cpython-311.pyc
+│       ├── nats_bootstrap.py
+│       ├── nats_server_runtime.py
+│       ├── redis_bootstrap.py
+│       └── redis_server_runtime.py
 └── utils
     └── checkdoc.go
 
-129 directories, 193 files
+122 directories, 172 files

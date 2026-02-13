@@ -12,6 +12,7 @@ Module: system_initializer.main
     - 初始化流程策略=B：會先 stop 舊 nats-server 再重新啟動（避免舊狀態污染）。
     - 任一步驟失敗將中止整體初始化流程。
     - 不得被 infra 層依賴。
+    - NATS/Redis runtime 先就緒，再做 JetStream topology bootstrap（避免 runtime 變動污染治理結果）
 """
 
 from __future__ import annotations
@@ -25,9 +26,11 @@ from typing import Optional
 from system_initializer.logger import bootstrap_logger, get_logger
 from system_initializer.steps.nats_bootstrap import NatsBootstrapOptions, run_nats_bootstrap
 from system_initializer.steps.nats_server_runtime import NatsServerRuntimeOptions, restart_nats_server
-
-# from system_initializer.steps.redis_bootstrap import run_redis_bootstrap
-# from system_initializer.steps.redis_server_runtime import restart_redis_server
+from system_initializer.steps.redis_server_runtime import (
+    RedisServerRuntimeOptions,
+    RedisServerInstance,
+    restart_redis_servers,
+)
 
 
 async def run_initializer() -> int:
@@ -60,13 +63,29 @@ async def run_initializer() -> int:
         restart_nats_server(
             NatsServerRuntimeOptions(
                 conf_path="configs/nats/server.conf",
-                # enable_http_probe=True  # [若 conf 有 http: <port>，會補做 /varz probe。]
             )
         )
         logger.info("nats server runtime ready")
 
         # ------------------------------------------------------------------
-        # Step 1: NATS JetStream Topology (inter)
+        # Step 1: Redis Server Runtime (stop → start → ready)  [multi instances]
+        # ------------------------------------------------------------------
+        restart_redis_servers(
+            RedisServerRuntimeOptions(
+                instances=[
+                    RedisServerInstance(name="capital", conf_path="configs/redis/capital.conf"),
+                    RedisServerInstance(name="kline", conf_path="configs/redis/kline.conf"),
+                    RedisServerInstance(name="order", conf_path="configs/redis/order.conf"),
+                    RedisServerInstance(name="position", conf_path="configs/redis/position.conf"),
+                    RedisServerInstance(name="state", conf_path="configs/redis/state.conf"),
+                    RedisServerInstance(name="strategy", conf_path="configs/redis/strategy.conf"),
+                ],
+            )
+        )
+        logger.info("redis server runtime ready")
+
+        # ------------------------------------------------------------------
+        # Step 2: NATS JetStream Topology (inter)
         # ------------------------------------------------------------------
         inter_report = await run_nats_bootstrap(
             NatsBootstrapOptions(
@@ -82,7 +101,7 @@ async def run_initializer() -> int:
         logger.info("nats bootstrap finished | scope=inter")
 
         # ------------------------------------------------------------------
-        # Step 2: NATS JetStream Topology (intra)
+        # Step 3: NATS JetStream Topology (intra)
         # ------------------------------------------------------------------
         intra_report = await run_nats_bootstrap(
             NatsBootstrapOptions(
@@ -96,15 +115,6 @@ async def run_initializer() -> int:
             logger.error("nats bootstrap failed | scope=intra")
             return 1
         logger.info("nats bootstrap finished | scope=intra")
-
-        # ------------------------------------------------------------------
-        # Step 3: Redis (預留)
-        # ------------------------------------------------------------------
-        # restart_redis_server(...)
-        # redis_report = await run_redis_bootstrap(...)
-        # if not redis_report.get("ok", False):
-        #     logger.error("redis bootstrap failed")
-        #     return 1
 
         logger.info("system initializer completed")
         return 0

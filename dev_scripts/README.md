@@ -5,7 +5,7 @@
 ### ✅ 開啟全部 Redis
 
 ```bash
-./scripts/redis_start_all.sh
+./dev_scripts/redis_start_all.sh
 ```
 
 ---
@@ -13,11 +13,11 @@
 ### 🛑 關閉單一 Redis 層
 
 ```bash
-./scripts/stop_redis_layer.sh push
-./scripts/stop_redis_layer.sh cache
-./scripts/stop_redis_layer.sh delay
-./scripts/stop_redis_layer.sh snapshot
-./scripts/stop_redis_layer.sh failover
+./dev_scripts/stop_redis_layer.sh push
+./dev_scripts/stop_redis_layer.sh cache
+./dev_scripts/stop_redis_layer.sh delay
+./dev_scripts/stop_redis_layer.sh snapshot
+./dev_scripts/stop_redis_layer.sh failover
 ```
 
 ---
@@ -25,7 +25,7 @@
 ### 🛑 關閉全部 Redis
 
 ```bash
-./scripts/redis_stop_all.sh
+./dev_scripts/redis_stop_all.sh
 ```
 ---
 
@@ -34,7 +34,7 @@
 查看每一層 Redis 是否啟動 × 目前有多少連線：
 
 ```bash
-./scripts/redis_status_check.sh
+./dev_scripts/redis_status_check.sh
 ```
 
 ### ✅ 執行結果範例：
@@ -172,7 +172,7 @@ redis-cli -p 6380 hgetall strategy:BTC-USDT
 背景腳本執行：
 
 ```bash
-./scripts/nats_start_all.sh
+./dev_scripts/nats_start_all.sh
 ```
 
 > ℹ️ 注意：目前已啟用授權機制，所有 client 需提供帳號密碼：
@@ -181,7 +181,7 @@ redis-cli -p 6380 hgetall strategy:BTC-USDT
 
 
 ```bash
-./scripts/nats_status_check.sh
+./dev_scripts/nats_status_check.sh
 ```
 
 
@@ -194,7 +194,7 @@ redis-cli -p 6380 hgetall strategy:BTC-USDT
 背景腳本執行：
 
 ```bash
-./scripts/nats_stop_all.sh
+./dev_scripts/nats_stop_all.sh
 ```
 
 ---

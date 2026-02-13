@@ -11,6 +11,8 @@ Module: system_initializer.steps.nats_server_runtime
     - stop 具破壞性：會終止占用指定 port 的 nats-server（或上次 pidfile 指向的進程）。
     - 連線與拓樸治理由 nats_bootstrap.py 負責（錯誤處理語意不同，必須分離）。
     - 以 TCP probe 作為主要就緒判斷；若 conf 有 http: <port>，可選擇做 /varz probe。
+    - nats runtime artifacts 與 redis 同樣隔離於 run_dir。
+    - node-1 命名保留未來 cluster 擴充彈性。
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from pathlib import Path
 from typing import Optional
 
 # === 系統內模組 (Internal Modules) ===
-from system_initializer.logger import get_logger
+from system_initializer.logger import get_logger, run_dir
 
 
 logger = get_logger(__name__)
@@ -52,8 +54,10 @@ class NatsServerRuntimeOptions:
         - enable_http_probe: 若 http_port 存在，是否額外做 /varz probe。
         - startup_timeout_sec: 啟動就緒等待秒數。
         - shutdown_timeout_sec: 停止等待秒數（逾時則 SIGKILL）。
-        - log_file: stdout/stderr log 檔案路徑；None 表示 logs/nats.out（相對 cwd）。
-        - pid_file: pidfile 路徑；None 表示 logs/system_initializer/nats-server.pid（相對 cwd）。
+        - log_file: 固定落於
+            <run_dir>/runtime/nats/node-1/nats.out
+        - pid_file: 固定落於
+            <run_dir>/runtime/nats/node-1/nats-server.pid
 
     契約 / 限制:
         - Strategy=B：會先 stop 再 start；stop 將嘗試終止占用指定 port 的進程。
@@ -61,6 +65,7 @@ class NatsServerRuntimeOptions:
 
     備註:
         - 若系統環境缺少 lsof/ss/netstat，仍可依賴 pidfile 做 best-effort stop。
+        - runtime artifacts 僅在單次 initializer run 範圍內有效。
     """
     conf_path: str | Path = "configs/nats/server.conf"
     host: str = "127.0.0.1"
@@ -98,8 +103,11 @@ def restart_nats_server(opts: NatsServerRuntimeOptions) -> int:
     port = int(opts.port) if opts.port is not None else conf_port
     http_port = int(opts.http_port) if opts.http_port is not None else conf_http_port
 
-    pid_file = _resolve_path(opts.pid_file or "logs/system_initializer/nats-server.pid")
-    log_file = _resolve_path(opts.log_file or "logs/nats.out")
+    runtime_dir = run_dir() / "runtime" / "nats" / "node-1"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    pid_file = runtime_dir / "nats-server.pid"
+    log_file = runtime_dir / "nats.out"
 
     # [將 runtime 的落地路徑先確定，避免後續在錯誤路徑上重試造成噪音。]
     pid_file.parent.mkdir(parents=True, exist_ok=True)
