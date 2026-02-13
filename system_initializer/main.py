@@ -93,6 +93,7 @@ async def run_initializer() -> int:
                 do_reset=True,
                 do_bootstrap=True,
                 do_audit=True,
+                audit_outfile="js_audit_inter.json",
             )
         )
         if not inter_report.get("ok", False):
@@ -109,6 +110,7 @@ async def run_initializer() -> int:
                 do_reset=True,
                 do_bootstrap=True,
                 do_audit=True,
+                audit_outfile="js_audit_intra.json",
             )
         )
         if not intra_report.get("ok", False):

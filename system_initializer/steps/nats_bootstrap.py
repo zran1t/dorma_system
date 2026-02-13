@@ -36,7 +36,7 @@ from nats.js.api import (
 from nats.js.errors import NotFoundError
 
 # === 系統內模組 (Internal Modules) ===
-from system_initializer.logger import current_context, get_logger
+from system_initializer.logger import current_context, get_logger, run_dir
 
 
 logger = get_logger(__name__)
@@ -1215,28 +1215,22 @@ def _put_mismatch(
 
 def _resolve_outfile_path(outfile: str | Path) -> Path:
     """
-    _resolve_outfile_path 正規化稽核輸出檔案路徑。
-
-    功能:
-        - 將相對路徑轉換為絕對路徑。
-        - 若未指定 .json 副檔名，自動附加 UTC 時間戳與 .json。
-
-    參數:
-        - outfile: 使用者提供之輸出路徑或前綴。
-
-    回傳:
-        - result: 最終輸出檔案 Path。
-        - error: 無。
+    將 audit report 固定落在本次 run_dir()/reports/ 之下。
+    不附加 timestamp，不附加 trace_id。
     """
+
     p = Path(outfile)
+
+    # 若是相對路徑 → 自動放到 run_dir()/reports/
     if not p.is_absolute():
-        p = Path.cwd() / p
+        base = run_dir() / "reports"
+        p = base / p
 
-    if p.suffix.lower() == ".json":
-        return p
+    # 強制 .json
+    if p.suffix.lower() != ".json":
+        p = p.with_suffix(".json")
 
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ")
-    return p.with_name(f"{p.name}_{ts}.json")
+    return p
 
 
 def _dump_json(obj: Dict[str, Any], outpath: Path) -> None:
