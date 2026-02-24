@@ -15,6 +15,7 @@
 │   │   ├── capital.conf
 │   │   ├── kline.conf
 │   │   ├── order.conf
+│   │   ├── pools
 │   │   ├── position.conf
 │   │   ├── state.conf
 │   │   └── strategy.conf
@@ -82,6 +83,33 @@
 │       │       ├── refiner.go
 │       │       └── types.go
 │       └── ref_data_kol
+│           ├── kol_chief
+│           ├── kol_comm_room
+│           └── kol_dispatch_room
+├── data_dpt_rf
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
+│   └── kols
+│       ├── account_data_kol
+│       │   ├── groups
+│       │   ├── kol_chief
+│       │   ├── kol_comm_room
+│       │   └── kol_dispatch_room
+│       ├── instrument_data_kol
+│       │   ├── groups
+│       │   ├── kol_chief
+│       │   ├── kol_comm_room
+│       │   └── kol_dispatch_room
+│       ├── market_data_kol
+│       │   ├── groups
+│       │   │   ├── book
+│       │   │   ├── collect
+│       │   │   └── refine
+│       │   ├── kol_chief
+│       │   ├── kol_comm_room
+│       │   └── kol_dispatch_room
+│       └── ref_data_kol
+│           ├── groups
 │           ├── kol_chief
 │           ├── kol_comm_room
 │           └── kol_dispatch_room
@@ -176,13 +204,7 @@
 │       ├── nats_publisher.py
 │       └── service_entry.py
 ├── logs
-│   ├── nats.out
 │   └── system_initializer
-│       ├── nats-server.pid
-│       ├── system_initializer_2026-02-12T08-47-10Z_9ccd2509.log
-│       ├── system_initializer_2026-02-12T09-00-22Z_837f152d.log
-│       ├── system_initializer_2026-02-12T09-01-30Z_c5f5744f.log
-│       └── system_initializer_2026-02-12T09-02-12Z_c94bea23.log
 ├── observability_dpt
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
@@ -202,12 +224,6 @@
 │   │   └── v5.0.drawio
 │   └── TO_DO.txt
 ├── pytest.ini
-├── reports
-│   └── js_auditor
-│       ├── js_audit_2026-02-12T08-47-10Z.json
-│       ├── js_audit_2026-02-12T09-00-23Z.json
-│       ├── js_audit_2026-02-12T09-01-30Z.json
-│       └── js_audit_2026-02-12T09-02-13Z.json
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -285,7 +301,8 @@
 │       │   ├── __init__.cpython-311.pyc
 │       │   ├── logging_setup.cpython-311.pyc
 │       │   ├── nats_bootstrap.cpython-311.pyc
-│       │   └── nats_server_runtime.cpython-311.pyc
+│       │   ├── nats_server_runtime.cpython-311.pyc
+│       │   └── redis_server_runtime.cpython-311.pyc
 │       ├── nats_bootstrap.py
 │       ├── nats_server_runtime.py
 │       ├── redis_bootstrap.py
@@ -293,4 +310,4 @@
 └── utils
     └── checkdoc.go
 
-122 directories, 172 files
+148 directories, 163 files
