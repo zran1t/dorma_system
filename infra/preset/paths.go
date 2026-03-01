@@ -11,7 +11,7 @@
 package preset
 
 const (
-	DefaultMarketDataStartupPath     = "configs/system_presets/market_data.startup.yaml"
-	DefaultInstrumentDataStartupPath = "configs/system_presets/instrument_data.startup.yaml"
-	DefaultTradingAllowlistPath      = "configs/system_presets/trading_allowlist.yaml"
+	DefaultMarketDataStartupPath     = "configs/presets/system/market_data.yaml"
+	DefaultInstrumentDataStartupPath = "configs/presets/system/instrument_data.yaml"
+	DefaultTradingAllowlistPath      = "configs/presets/system/trading_allowlist.yaml"
 )
