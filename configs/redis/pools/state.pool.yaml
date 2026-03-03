@@ -1,0 +1,103 @@
+# ------------------------------------------------------------
+# state.pool.yaml
+#
+# 契約說明（Contract）
+# ------------------------------------------------------------
+# 1. 本檔僅定義 Redis keyspace 結構與資料契約，不定義實際資料來源。
+# 2. mapping.symbol.entries 為 symbol mapping 的唯一權威（source-of-truth）。
+# 3. mapping.symbol.bundle 為 entries 的 materialized snapshot，不得直接寫入。
+# 4. presets.system.* 僅提供 bundle（編譯後快照），不提供 entries（MVP 範圍）。
+# 5. runtime 僅讀 bundle；熱更新修改 entries，並重新 materialize bundle。
+# 6. 所有 key 必須以 root_prefix 開頭，作為 pool 治理邊界。
+# ------------------------------------------------------------
+
+version: 1
+
+redis:
+  instance: state
+  db: 0
+
+root_prefix: "state:pool:"
+
+branches:
+
+  # ----------------------------------------------------------
+  # Presets（System Intent Snapshot）
+  # ----------------------------------------------------------
+  # 說明：
+  # - presets 代表 system-level intent（market_data / instrument_data / trading_allowlist）
+  # - 僅儲存「編譯後 JSON snapshot」
+  # - 不提供 entries 分片（避免過早鎖死 intent 粒度）
+  # ----------------------------------------------------------
+  presets:
+    system:
+
+      market_data:
+        bundle:
+          key: "state:pool:presets:system:market_data:bundle"
+          value: { type: string, encoding: json }
+
+      instrument_data:
+        bundle:
+          key: "state:pool:presets:system:instrument_data:bundle"
+          value: { type: string, encoding: json }
+
+      trading_allowlist:
+        bundle:
+          key: "state:pool:presets:system:trading_allowlist:bundle"
+          value: { type: string, encoding: json }
+
+  # ----------------------------------------------------------
+  # Mapping（Symbol Canonical <-> Native）
+  # ----------------------------------------------------------
+  # 契約：
+  # - entries 為唯一權威（可 patch / 可 audit / 可熱更新）
+  # - bundle 為 entries 聚合快照（runtime 冷啟動讀取）
+  # - canonical symbol 為三段式字串（例如 BTC-USDT-SWAP）
+  # ----------------------------------------------------------
+  mapping:
+    symbol:
+
+      # ---------------------------
+      # Snapshot（Materialized）
+      # ---------------------------
+      bundle:
+        okx:
+          key: "state:pool:mapping:symbol:bundle:okx"
+          value: { type: string, encoding: json }
+
+        binance:
+          key: "state:pool:mapping:symbol:bundle:binance"
+          value: { type: string, encoding: json }
+
+      # ---------------------------
+      # Authority（Source-of-Truth）
+      # ---------------------------
+      entries:
+        okx:
+          prefix: "state:pool:mapping:symbol:entries:okx:"
+          key_schema: "<symbol_c>:<view>"
+
+          examples:
+            native: "state:pool:mapping:symbol:entries:okx:BTC-USDT-SPOT:native"
+            meta:   "state:pool:mapping:symbol:entries:okx:BTC-USDT-SWAP:meta"
+
+          values:
+            native: { type: string }                     # native exchange identifier
+            meta:   { type: string, encoding: json }    # extended metadata
+
+        binance:
+          prefix: "state:pool:mapping:symbol:entries:binance:"
+          key_schema: "<symbol_c>:<view>"
+
+          examples:
+            native: "state:pool:mapping:symbol:entries:binance:BTC-USDT-SPOT:native"
+            meta:   "state:pool:mapping:symbol:entries:binance:BTC-USDT-SWAP:meta"
+
+          values:
+            native: { type: string }
+            meta:   { type: string, encoding: json }
+
+      views:
+        - native
+        - meta

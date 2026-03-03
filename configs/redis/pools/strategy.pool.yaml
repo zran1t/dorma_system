@@ -1,0 +1,9 @@
+version: 1
+
+redis:
+  instance: strategy
+  db: 0
+
+root_prefix: "strategy:pool:"
+
+branches:

@@ -16,6 +16,8 @@
 │   │   ├── kline.conf
 │   │   ├── order.conf
 │   │   ├── pools
+│   │   │   ├── capital.pool.yaml
+│   │   │   └── state.pool.yaml
 │   │   ├── position.conf
 │   │   ├── state.conf
 │   │   └── strategy.conf
@@ -86,35 +88,35 @@
 │           ├── kol_chief
 │           ├── kol_comm_room
 │           └── kol_dispatch_room
-├── data_dpt_rf
-│   ├── dpt_comm_room
-│   ├── dpt_dispatch_room
-│   └── kols
-│       ├── account_data_kol
-│       │   ├── groups
-│       │   ├── kol_chief
-│       │   ├── kol_comm_room
-│       │   └── kol_dispatch_room
-│       ├── instrument_data_kol
-│       │   ├── groups
-│       │   ├── kol_chief
-│       │   ├── kol_comm_room
-│       │   └── kol_dispatch_room
-│       ├── market_data_kol
-│       │   ├── groups
-│       │   │   ├── book
-│       │   │   ├── collect
-│       │   │   └── refine
-│       │   ├── kol_chief
-│       │   ├── kol_comm_room
-│       │   └── kol_dispatch_room
-│       └── ref_data_kol
-│           ├── groups
-│           ├── kol_chief
-│           ├── kol_comm_room
-│           └── kol_dispatch_room
 ├── dev_scripts
 │   ├── README.md
+│   ├── data_dpt_rf
+│   │   ├── dpt_comm_room
+│   │   ├── dpt_dispatch_room
+│   │   └── kols
+│   │       ├── account_data_kol
+│   │       │   ├── groups
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       ├── instrument_data_kol
+│   │       │   ├── groups
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       ├── market_data_kol
+│   │       │   ├── groups
+│   │       │   │   ├── book
+│   │       │   │   ├── collect
+│   │       │   │   └── refine
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       └── ref_data_kol
+│   │           ├── groups
+│   │           ├── kol_chief
+│   │           ├── kol_comm_room
+│   │           └── kol_dispatch_room
 │   ├── nats_start_all.sh
 │   ├── nats_status_check.sh
 │   ├── nats_stop_all.sh
@@ -205,6 +207,36 @@
 │       └── service_entry.py
 ├── logs
 │   └── system_initializer
+│       └── runs
+│           └── 2026-02-25T08-15-23Z_796f17b7
+│               ├── reports
+│               │   ├── js_audit_inter.json
+│               │   └── js_audit_intra.json
+│               ├── runtime
+│               │   ├── nats
+│               │   │   └── node-1
+│               │   │       ├── nats-server.pid
+│               │   │       └── nats.out
+│               │   └── redis
+│               │       ├── capital
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── kline
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── order
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── position
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── state
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       └── strategy
+│               │           ├── redis.out
+│               │           └── redis.pid
+│               └── system_initializer.log
 ├── observability_dpt
 ├── project_docs
 │   ├── DEV_COMMANDS.txt
@@ -310,4 +342,4 @@
 └── utils
     └── checkdoc.go
 
-148 directories, 163 files
+161 directories, 182 files
