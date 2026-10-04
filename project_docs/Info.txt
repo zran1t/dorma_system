@@ -1,3 +1,0 @@
-
-Command(refresh Project Tree):
-tree -a -I 'pycache|.git|.DS_Store|.venv|.pytest_cache|*.pyc' > project_docs/PROJECT_TREE.txt

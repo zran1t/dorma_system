@@ -2,39 +2,32 @@
 ├── .env
 ├── .gitignore
 ├── .pre-commit-config.yaml
-├── .python-version
-├── README.md
-├── common
-│   ├── __init__.py
-│   ├── __pycache__
-│   ├── channel_config_loader.py
-│   ├── js_auditor.py
-│   ├── js_reset.py
-│   ├── json_schema_validator.py
-│   ├── nats_bootstrap.py
-│   ├── nats_comm.py
-│   └── subject_resolver.py
+├── cmd
+│   └── preset
+│       └── main.go
 ├── configs
-│   ├── addressbook
-│   │   └── comm_rooms.yaml
 │   ├── channels
-│   │   ├── data.yaml
-│   │   ├── initialization.yaml
 │   │   ├── inter.yaml
-│   │   └── market.yaml
+│   │   └── intra.yaml
 │   ├── nats
 │   │   └── server.conf
 │   ├── redis
-│   │   ├── redis_capital_pool.conf
-│   │   ├── redis_kline_pool.conf
-│   │   ├── redis_order_pool.conf
-│   │   ├── redis_position_pool.conf
-│   │   └── redis_strategy_pool.conf
+│   │   ├── capital.conf
+│   │   ├── kline.conf
+│   │   ├── order.conf
+│   │   ├── pools
+│   │   │   ├── capital.pool.yaml
+│   │   │   └── state.pool.yaml
+│   │   ├── position.conf
+│   │   ├── state.conf
+│   │   └── strategy.conf
 │   ├── symbol_mapping
 │   │   ├── binance.yaml
 │   │   └── okx.yaml
 │   └── system_presets
-│       └── startup_matrix.yaml
+│       ├── instrument_data.startup.yaml
+│       ├── market_data.startup.yaml
+│       └── trading_allowlist.yaml
 ├── data_dpt
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
@@ -95,12 +88,73 @@
 │           ├── kol_chief
 │           ├── kol_comm_room
 │           └── kol_dispatch_room
+├── dev_scripts
+│   ├── README.md
+│   ├── data_dpt_rf
+│   │   ├── dpt_comm_room
+│   │   ├── dpt_dispatch_room
+│   │   └── kols
+│   │       ├── account_data_kol
+│   │       │   ├── groups
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       ├── instrument_data_kol
+│   │       │   ├── groups
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       ├── market_data_kol
+│   │       │   ├── groups
+│   │       │   │   ├── book
+│   │       │   │   ├── collect
+│   │       │   │   └── refine
+│   │       │   ├── kol_chief
+│   │       │   ├── kol_comm_room
+│   │       │   └── kol_dispatch_room
+│   │       └── ref_data_kol
+│   │           ├── groups
+│   │           ├── kol_chief
+│   │           ├── kol_comm_room
+│   │           └── kol_dispatch_room
+│   ├── nats_start_all.sh
+│   ├── nats_status_check.sh
+│   ├── nats_stop_all.sh
+│   ├── redis_start_all.sh
+│   ├── redis_status_check.sh
+│   └── redis_stop_all.sh
+├── execution_dpt
+│   ├── dpt_comm_room
+│   ├── dpt_dispatch_room
+│   └── kols
 ├── go.mod
 ├── go.sum
 ├── infra
 │   ├── preset
+│   │   ├── README.md
+│   │   ├── compiler
+│   │   │   ├── instrument_data.go
+│   │   │   ├── market_data.go
+│   │   │   └── trading_allowlist.go
 │   │   ├── loader.go
-│   │   └── types.go
+│   │   ├── loader_test.go
+│   │   ├── packet
+│   │   │   ├── instrument_data_types.go
+│   │   │   ├── market_data_types.go
+│   │   │   ├── trading_allowlist_types.go
+│   │   │   └── types.go
+│   │   ├── paths.go
+│   │   ├── reader
+│   │   │   ├── common.go
+│   │   │   ├── instrument_data.go
+│   │   │   ├── market_data.go
+│   │   │   └── trading_allowlist.go
+│   │   ├── types.go
+│   │   └── validator
+│   │       ├── common.go
+│   │       ├── instrument_data.go
+│   │       ├── market_data.go
+│   │       └── trading_allowlist.go
 │   ├── pubsub
 │   │   ├── README.md
 │   │   ├── bus.go
@@ -116,166 +170,92 @@
 │   └── transport
 │       ├── rest
 │       └── ws
+│           ├── README.md
 │           ├── client.go
+│           ├── client_test.go
 │           ├── collect_base.go
+│           ├── collect_base_test.go
 │           └── types.go
-├── initialization_dpt
-│   ├── __init__.py
-│   ├── __pycache__
-│   ├── dpt_comm_room
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   ├── communicate.py
-│   │   └── communicate_core.py
-│   ├── dpt_dispatch_room
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   └── dispatcher.py
-│   └── kols
-│       ├── init_account_data_kol
-│       ├── init_analytics_data_kol
-│       ├── init_lf_data_kol
-│       │   ├── init_kline.py
-│       │   ├── kol_comm_room
-│       │   │   ├── __init__.py
-│       │   │   ├── __pycache__
-│       │   │   ├── communicate.py
-│       │   │   └── communicate_core.py
-│       │   ├── kol_dispatch_room
-│       │   │   ├── __init__.py
-│       │   │   ├── __pycache__
-│       │   │   └── dispatcher.py
-│       │   └── kol_watch_room
-│       │       └── stub.py
-│       └── init_ref_data_kol
 ├── injector_api
 │   ├── __init__.py
 │   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   └── main.cpython-311.pyc
 │   ├── main.py
 │   ├── routes
 │   │   ├── __init__.py
 │   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── strategy_pools.cpython-311.pyc
 │   │   └── strategy_pools.py
 │   ├── schemas
 │   │   ├── __init__.py
 │   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── strategy_pools.cpython-311.pyc
 │   │   └── strategy_pools.py
 │   └── service
 │       ├── __init__.py
 │       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   ├── injector_service.cpython-311.pyc
+│       │   ├── nats_publisher.cpython-311.pyc
+│       │   ├── persist_file.cpython-311.pyc
+│       │   ├── persist_redis.cpython-311.pyc
+│       │   └── service_entry.cpython-311.pyc
 │       ├── nats_publisher.py
 │       └── service_entry.py
-├── jetstream
-│   └── jetstream
-│       └── $G
-│           └── streams
-│               ├── INIT_BROADCAST_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── BC_durable_kol
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               ├── INIT_KOL_OUT_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── ALL_kol_durable
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               ├── INIT_TO_KOL_STREAM
-│               │   ├── meta.inf
-│               │   ├── meta.sum
-│               │   ├── msgs
-│               │   │   ├── 1.blk
-│               │   │   └── index.db
-│               │   └── obs
-│               │       └── DIRECT_durable_kol
-│               │           ├── meta.inf
-│               │           ├── meta.sum
-│               │           └── o.dat
-│               └── INTER_TO_DEPT_STREAM
-│                   ├── meta.inf
-│                   ├── meta.sum
-│                   ├── msgs
-│                   │   ├── 1.blk
-│                   │   └── index.db
-│                   └── obs
-│                       ├── DIRECT_durable_capital
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_data
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_initialization
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       ├── DIRECT_durable_risk
-│                       │   ├── meta.inf
-│                       │   ├── meta.sum
-│                       │   └── o.dat
-│                       └── DIRECT_durable_strategy
-│                           ├── meta.inf
-│                           ├── meta.sum
-│                           └── o.dat
 ├── logs
-│   └── nats.out
-├── nats_data
-│   └── jetstream
-│       └── $G
-│           └── streams
-│               └── KV_init
-│                   ├── meta.inf
-│                   ├── meta.sum
-│                   ├── msgs
-│                   │   ├── 1.blk
-│                   │   └── index.db
-│                   └── obs
+│   └── system_initializer
+│       └── runs
+│           └── 2026-02-25T08-15-23Z_796f17b7
+│               ├── reports
+│               │   ├── js_audit_inter.json
+│               │   └── js_audit_intra.json
+│               ├── runtime
+│               │   ├── nats
+│               │   │   └── node-1
+│               │   │       ├── nats-server.pid
+│               │   │       └── nats.out
+│               │   └── redis
+│               │       ├── capital
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── kline
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── order
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── position
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       ├── state
+│               │       │   ├── redis.out
+│               │       │   └── redis.pid
+│               │       └── strategy
+│               │           ├── redis.out
+│               │           └── redis.pid
+│               └── system_initializer.log
 ├── observability_dpt
-├── place_orders_dpt
-│   ├── dpt_comm_room
-│   ├── dpt_dispatch_room
-│   └── kols
 ├── project_docs
-│   ├── AI_VERSION_GUARD.txt
-│   ├── GO_COMMENT_STANDARD.txt
-│   ├── Info.txt
+│   ├── DEV_COMMANDS.txt
+│   ├── GO_COMMENT_STANDARD.md
+│   ├── PRE_COMMIT_AND_REVIVE_BEHAVIOR.md
 │   ├── PROJECT_TREE.txt
+│   ├── PYTHON_COMMENT_TEMPLATE.md
 │   ├── README_PACKAGE_TEMPLATE.md
-│   ├── SERVER_VERSION.txt
-│   ├── intro
-│   │   ├── hf_market_data_kol.md
-│   │   └── lf_market_data_kol.md
-│   ├── refactor_backlog.md
-│   └── 技術架構圖
-│       ├── v1.0.drawio
-│       ├── v2.0.drawio
-│       ├── v2.1.drawio
-│       ├── v3.0.drawio
-│       ├── v3.1.drawio
-│       ├── v4.0.drawio
-│       └── v5.0.drawio
+│   ├── REFACTOR_BACKLOG.md
+│   ├── System Architecture Diagram
+│   │   ├── v1.0.drawio
+│   │   ├── v2.0.drawio
+│   │   ├── v2.1.drawio
+│   │   ├── v3.0.drawio
+│   │   ├── v3.1.drawio
+│   │   ├── v4.0.drawio
+│   │   └── v5.0.drawio
+│   └── TO_DO.txt
 ├── pytest.ini
-├── redis_data
-│   ├── capital
-│   ├── kline
-│   ├── order
-│   ├── position
-│   └── strategy
-├── reports
-│   ├── init_audit_2025-09-28_10-24-10.json
-│   └── inter_audit_2025-09-28_10-24-10.json
 ├── requirements-dev.in
 ├── requirements-dev.txt
 ├── requirements.in
@@ -285,11 +265,9 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
-│       ├── capital_kol
-│       ├── pre_trade_kol
-│       └── system_risk_kol
 ├── schemas
 │   ├── disable
+│   │   ├── envelope.proto
 │   │   ├── message_protocol_v1.json
 │   │   ├── message_protocol_v1.md
 │   │   └── symbol_schema.json
@@ -310,31 +288,29 @@
 │   │   └── rust
 │   └── proto
 │       ├── envelope
-│       │   ├── CHANGELOG.md
-│       │   └── v1
-│       │       └── envelope.proto
-│       └── market
-│           ├── common
+│       ├── market
+│       │   ├── common
+│       │   │   ├── CHANGELOG.md
+│       │   │   └── v1
+│       │   │       └── market_common.proto
+│       │   ├── kline
+│       │   │   ├── CHANGELOG.md
+│       │   │   └── v1
+│       │   │       └── market_kline.proto
+│       │   └── stream
+│       │       ├── CHANGELOG.md
+│       │       └── v1
+│       │           └── market_stream.proto
+│       └── system
+│           ├── control
 │           │   ├── CHANGELOG.md
 │           │   └── v1
-│           │       └── market_common.proto
-│           ├── kline
-│           │   ├── CHANGELOG.md
-│           │   └── v1
-│           │       └── market_kline.proto
-│           └── stream
+│           │       └── system_control.proto
+│           └── runtime
 │               ├── CHANGELOG.md
 │               └── v1
-│                   └── market_stream.proto
-├── scripts
-│   ├── nats_start_all.sh
-│   ├── nats_status_check.sh
-│   ├── nats_stop_all.sh
-│   ├── redis_start_all.sh
-│   ├── redis_status_check.sh
-│   └── redis_stop_all.sh
+│                   └── unit_runtime.proto
 ├── start_inject_api.py
-├── start_system.py
 ├── state_dpt
 │   ├── comm_room
 │   ├── dispatch_room
@@ -343,18 +319,27 @@
 │   ├── dpt_comm_room
 │   ├── dpt_dispatch_room
 │   └── kols
-├── tests
-│   ├── conftest.py
-│   ├── lf_hf_market_data_sniffer
-│   │   └── main.go
-│   ├── test_channel_loader.py
-│   ├── test_js_bootstrap.py
-│   ├── test_js_reset.py
-│   ├── test_tools_bootstrap_2steps.py
-│   └── test_tools_bootstrap_3steps.py
-└── tools
-    ├── __pycache__
-    ├── checkdoc.go
-    └── runtime_bootstrap.py
+├── system_initializer
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── logger.cpython-311.pyc
+│   │   └── main.cpython-311.pyc
+│   ├── logger.py
+│   ├── main.py
+│   └── steps
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   ├── logging_setup.cpython-311.pyc
+│       │   ├── nats_bootstrap.cpython-311.pyc
+│       │   ├── nats_server_runtime.cpython-311.pyc
+│       │   └── redis_server_runtime.cpython-311.pyc
+│       ├── nats_bootstrap.py
+│       ├── nats_server_runtime.py
+│       ├── redis_bootstrap.py
+│       └── redis_server_runtime.py
+└── utils
+    └── checkdoc.go
 
-169 directories, 189 files
+161 directories, 182 files

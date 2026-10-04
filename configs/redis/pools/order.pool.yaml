@@ -1,0 +1,9 @@
+version: 1
+
+redis:
+  instance: order
+  db: 0
+
+root_prefix: "order:pool:"
+
+branches:

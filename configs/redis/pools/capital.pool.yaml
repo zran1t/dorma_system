@@ -1,0 +1,45 @@
+version: 1
+
+redis:
+  instance: capital
+  db: 0
+
+root_prefix: "capital:pool:"
+
+branches:
+
+  # -------------------------------------
+  # 全局資金狀態（帳戶維度）
+  # -------------------------------------
+  system:
+    bundle:
+      key: "capital:pool:system:bundle"
+      value: { type: string, encoding: json }
+      # contract:
+      # {
+      #   total_equity,
+      #   available_equity,
+      #   risk_ratio,
+      #   updated_at
+      # }
+
+  # -------------------------------------
+  # 各策略資金分配狀態（strategy 粒度）
+  # -------------------------------------
+  strategies:
+    prefix: "capital:pool:strategies:"
+    key_schema: "<strategy_id>"
+
+    example_key: "capital:pool:strategies:mean_reversion_01"
+
+    value:
+      type: string
+      encoding: json
+      # contract:
+      # {
+      #   weight,
+      #   allocated,
+      #   used,
+      #   remaining,
+      #   updated_at
+      # }

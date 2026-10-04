@@ -1,0 +1,39 @@
+# ================================
+# Development Helper Commands
+# ================================
+
+# --- Refresh Project Tree ---
+# 更新專案目錄結構快照（排除暫存 / runtime / data 目錄）
+tree -a \
+  -I '(__pycache__|\.git|\.DS_Store|\.venv|\.pytest_cache|jetstream|nats_data|redis_data|reports)' \
+  > project_docs/PROJECT_TREE.txt
+
+
+# --- Python Dependency Management (pip-tools) ---
+
+# 重新鎖定所有 runtime 依賴（requirements.in → requirements.txt）
+pip-compile --generate-hashes -o requirements.txt requirements.in
+
+# 重新鎖定 runtime + dev/test 依賴（requirements-dev.in → requirements-dev.txt）
+pip-compile --generate-hashes -o requirements-dev.txt requirements-dev.in
+
+# 將目前虛擬環境「同步」到 dev lock（會移除多餘套件）
+pip-sync requirements-dev.txt
+
+
+# --- Common Scenarios ---
+
+# 新增 / 移除 / 調整套件版本後的標準流程：
+# 1. 編輯 requirements.in 或 requirements-dev.in
+# 2. 重新執行 pip-compile
+# 3. 執行 pip-sync 對齊環境
+
+# 範例：只升級單一套件（例如 fastapi）
+pip-compile --generate-hashes \
+  --upgrade-package fastapi \
+  -o requirements.txt requirements.in
+
+# 範例：全面升級所有依賴（謹慎使用）
+pip-compile --generate-hashes \
+  --upgrade \
+  -o requirements.txt requirements.in

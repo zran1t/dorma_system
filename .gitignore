@@ -1,32 +1,55 @@
 # =====================================================
-# 通用系統檔案 / 臨時檔
+# OS / Editor Metadata
 # =====================================================
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
 Thumbs.db
+
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+
+# =====================================================
+# 通用暫存 / 備份 / 輸出
+# =====================================================
 *.log
 *.tmp
 *.bak
-*.swp
-*.swo
 *.orig
+*.pid
+*.dump
+*.cache
+/tmp/
+
 
 # =====================================================
-# Python 相關
+# Python Runtime / Build Artifacts
 # =====================================================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.egg
-*.egg-info/
-.eggs/
-*.sqlite3
+
 .env
 .venv/
 venv/
 .Python
 
-# pytest / coverage
+*.egg
+*.egg-info/
+.eggs/
+*.sqlite3
+
+
+# =====================================================
+# Python Test / Type / Coverage
+# =====================================================
 .coverage
 htmlcov/
 .pytest_cache/
@@ -35,8 +58,9 @@ htmlcov/
 .dmypy.json
 .pyre/
 
+
 # =====================================================
-# Go 相關
+# Go Build / Tooling
 # =====================================================
 bin/
 *.exe
@@ -47,11 +71,13 @@ bin/
 *.test
 *.out
 *.prof
+
 go.work
 go.work.sum
 
+
 # =====================================================
-# Rust 相關
+# Rust Build / Profiling
 # =====================================================
 /target/
 **/*.rs.bk
@@ -61,53 +87,36 @@ profraw/
 profdata/
 coverage/
 
+
 # =====================================================
-# 專案執行期資料（不應版控）
+# Runtime Data (❗絕不進版控)
 # =====================================================
 
-# JetStream / NATS 儲存資料
+# NATS / JetStream
 nats_data/
+jetstream/
 
-# Redis 實體資料庫
+# Redis data directory
 redis_data/
 
-# 執行時紀錄檔
-#logs/
-#reports/
+# Runtime logs / reports
+logs/
+reports/
 
-# 临时輸出或測試快取
-/tmp/
-*.cache/
-*.pid
-*.dump
 
 # =====================================================
-# 編譯產物 / Proto 生成
+# Generated Code / Proto / Tool Output
 # =====================================================
 
-# 自動生成的 Proto 編譯輸出
-#schemas/gen/go/
-#schemas/gen/rust/
+# Proto / schema generated output (enable if used)
+# schemas/gen/go/
+# schemas/gen/rust/
 
-# 若未來有 buf 或 protoc 临时檔案
 buf.gen.yaml
 buf.lock
 
-# =====================================================
-# IDE / 編輯器配置
-# =====================================================
-.vscode/
-.idea/
-*.iml
 
 # =====================================================
-# 其他可選忽略項
+# Notebook / Misc
 # =====================================================
-# Jupyter / Notebook
 .ipynb_checkpoints/
-
-# macOS metadata
-.AppleDouble
-.LSOverride
-Icon?
-._*

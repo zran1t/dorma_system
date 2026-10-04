@@ -1,0 +1,81 @@
+// File: schemas/proto/system/control/v1/system_control.proto
+// Package: system.control.v1
+//
+// 職責 (Responsibility):
+//     定義 system control-plane 之最小操作語意，用於部門級 system 行為協調。
+//     本協議僅描述「操作決策與狀態轉移」，不承載任何實際執行細節。
+//
+// 注意事項 (Notes):
+//     - 本協議設計為可頻繁演進，欄位保持最小集合。
+//     - 所有訊息皆假設由 inter / 共識流 等上層通道保證投遞與去重。
+//     - 本層不處理 unit / room 級操作。
+
+syntax = "proto3";
+
+package system.control.v1;
+
+option go_package = "schemas/gen/go/system/control/v1;systemcontrolv1";
+
+// ==============================
+// Enum: SystemAction
+// ==============================
+
+enum SystemAction {
+  SYSTEM_ACTION_UNSPECIFIED = 0;
+
+  SYSTEM_ACTION_SHUTDOWN = 1;   // 系統級停機
+  SYSTEM_ACTION_HOT_PLUG = 2;   // 系統級熱插拔
+  SYSTEM_ACTION_FLUSH    = 3;   // 系統級 flush / drain
+}
+
+// ==============================
+// Enum: ControlStatus
+// ==============================
+
+enum ControlStatus {
+  CONTROL_STATUS_UNSPECIFIED = 0;
+
+  CONTROL_STATUS_PROPOSED  = 1; // 已提出操作
+  CONTROL_STATUS_ACKED     = 2; // 已確認收到
+  CONTROL_STATUS_COMMITTED = 3; // 已進入執行階段
+  CONTROL_STATUS_ABORTED   = 4; // 操作取消
+}
+
+// ==============================
+// Message: SystemControlCommand
+// ==============================
+
+message SystemControlCommand {
+  string trace_id = 1;     // 系統操作追蹤識別碼
+  string source   = 2;     // 發起部門（例如 strategy / risk）
+  SystemAction action = 3;
+
+  // 操作目標（目前僅部門級，後續可擴充）
+  repeated string target_departments = 4;
+
+  ControlStatus status = 5;
+  int64 issued_at_unix_ms = 6;
+}
+
+// ==============================
+// Service: SystemControlService
+// ==============================
+
+// SystemControlService 定義部門級 system control-plane 之操作通知介面。
+//
+// 功能:
+//   - 提供 system 操作（shutdown / hot-plug / flush）之跨部門通知。
+//   - 承載 control-plane 狀態轉移（proposed / acked / committed / aborted）。
+//
+// 契約 / 限制:
+//   - 本服務不執行任何實際操作，僅傳遞決策與狀態。
+//   - 呼叫端必須確保訊息已完成共識或來自權威決策來源。
+//   - 不保證冪等性，需搭配 trace_id 與上層去重機制使用。
+//
+// 備註:
+//   - 本服務通常運行於 gRPC over UDS。
+//   - 實際訊息傳遞拓樸（inter / consensus flow）不屬於本服務責任範圍。
+service SystemControlService {
+  // Notify 用於傳遞 system 操作指令或狀態更新。
+  rpc Notify(SystemControlCommand) returns (SystemControlCommand);
+}

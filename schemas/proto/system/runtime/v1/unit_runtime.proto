@@ -1,0 +1,93 @@
+// File: schemas/proto/system/runtime/v1/unit_runtime.proto
+// Package: system.runtime.v1
+//
+// 職責 (Responsibility):
+//     定義 unit / kol 級 system runtime 操作協議。
+//     本協議負責實際執行類操作（flush / shutdown / hot-plug）之命令與回報。
+//
+// 注意事項 (Notes):
+//     - 本協議假設呼叫端已完成 system-level 一致性。
+//     - 所有操作皆為明確命令，不隱含 retry 或共識語意。
+//     - 執行結果僅回報成功或失敗，不描述內部流程。
+
+syntax = "proto3";
+
+package system.runtime.v1;
+
+option go_package = "schemas/gen/go/system/runtime/v1;systemruntimev1";
+
+// ==============================
+// Enum: RuntimeAction
+// ==============================
+
+enum RuntimeAction {
+  RUNTIME_ACTION_UNSPECIFIED = 0;
+
+  RUNTIME_ACTION_FLUSH    = 1; // flush / drain
+  RUNTIME_ACTION_SHUTDOWN = 2; // 停止並退出
+  RUNTIME_ACTION_HOT_PLUG = 3; // 熱插拔（重啟 / 重連）
+}
+
+// ==============================
+// Enum: RuntimeResult
+// ==============================
+
+enum RuntimeResult {
+  RUNTIME_RESULT_UNSPECIFIED = 0;
+
+  RUNTIME_RESULT_OK     = 1;
+  RUNTIME_RESULT_FAILED = 2;
+}
+
+// ==============================
+// Message: RuntimeCommand
+// ==============================
+
+message RuntimeCommand {
+  string trace_id = 1;
+
+  string department = 2; // 所屬部門
+  string unit_id    = 3; // 科別 / unit / kol identifier
+
+  RuntimeAction action = 4;
+  int64 issued_at_unix_ms = 5;
+}
+
+// ==============================
+// Message: RuntimeReport
+// ==============================
+
+message RuntimeReport {
+  string trace_id = 1;
+
+  string unit_id = 2;
+  RuntimeAction action = 3;
+
+  RuntimeResult result = 4;
+  string message = 5; // 簡短失敗原因或補充資訊
+
+  int64 finished_at_unix_ms = 6;
+}
+
+// ==============================
+// Service: UnitRuntimeService
+// ==============================
+
+// UnitRuntimeService 定義 unit / kol 級 system runtime 操作介面。
+//
+// 功能:
+//   - 接收調度處室發出的實際操作命令（flush / shutdown / hot-plug）。
+//   - 回報 unit 執行結果（成功 / 失敗）。
+//
+// 契約 / 限制:
+//   - 本服務假設 system-level 決策已完成，不參與共識流程。
+//   - 每一次呼叫對應一次明確操作，不隱含 retry 或重試語意。
+//   - 執行失敗僅回報結果，不進行補償或回滾。
+//
+// 備註:
+//   - 適合以 gRPC over UDS 方式部署於同機程序間。
+//   - 可由執行長（kol_chief）或 unit gateway 實作。
+service UnitRuntimeService {
+  // Execute 執行單一 unit 的 system 操作命令。
+  rpc Execute(RuntimeCommand) returns (RuntimeReport);
+}

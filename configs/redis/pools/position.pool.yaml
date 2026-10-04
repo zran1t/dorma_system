@@ -1,0 +1,9 @@
+version: 1
+
+redis:
+  instance: position
+  db: 0
+
+root_prefix: "position:pool:"
+
+branches:

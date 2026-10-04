@@ -1,32 +1,15 @@
-# configs/channels/inter.yaml
-
-# Inter (department ↔ department) with JetStream + explicit ACK
-# ─────────────────────────────────────────────────────────────────────
-# ■ 使用準則（Publisher / Subscriber）
-# 1) Publisher 永遠發「原始 subject」：inter.dpt.{dept}.comm.in
-# 2) Subscriber 永遠訂閱「deliver subject」：inter.dpt.{dept}.comm.in.deliver
-# 3) 每個部門只需訂閱自己的 deliver（deliver_subject 不支援萬用字元），本檔已列出所有部門。
+# File: configs/channels/inter.yaml
+# Module: configs.channels.inter
 #
-# ■ Headers 規範（鏡射＋去重；權威仍在 Payload/Proto）
-# - Content-Type: application/x-protobuf
-# - Nats-Msg-Id : {trace_id}:{hop}        # 配合 streams.duplicates 做去重
-# - X-Trace-Id  : {trace_id}
-# - X-Layer     : inter                    # 部門↔部門（inter）
-# - X-Direction : up|down|lateral          # 列出三種；⚠ inter 不應使用 up/down（只有部門↔部門的水平）
-# - X-Version   : 1.0.0
-# - （若使用 Any）X-Proto-Type : {type_url}
+# 職責 (Responsibility):
+#     定義「部門↔部門」之 system control-plane 通道拓樸，供共識破裂後之第二層一致性（部門級）使用。
+#     提供 JetStream streams/consumers 的宣告式設定來源，支援 bootstrap/audit/reset 工具對拓樸進行一致性治理。
 #
-# ■ JetStream 可靠性（建議統一）
-# - ack_policy  : explicit（顯式 ACK）
-# - ack_wait    : 30s
-# - max_deliver : 5
-# - backoff     : [1s, 3s, 10s, 30s]
-# - duplicates  : 2m（去重視窗；對應 Nats-Msg-Id）
-# - max_age     : 30d（保留期；可依空間調整）
-#
-# ■ 範例（初始化部門）
-# - 發佈 → inter.dpt.initialization.comm.in
-# - 訂閱 → inter.dpt.initialization.comm.in.deliver
+# 注意事項 (Notes):
+#     - 本通道僅承載「行為決策類」控制訊息（propose/ack/commit/abort/flush/kill/freeze），禁止承載業務資料或狀態同步。
+#     - deliver_subject 不支援萬用字元，必須為每一個部門建立獨立 consumer；部門端僅訂閱自身 deliver subject。
+#     - Nats-Msg-Id 必須與 duplicates 視窗搭配，以提供共識流程在重送/重試情境下的去重保證。
+#     - 依賴規範：本 YAML 僅為設定檔，不得耦合上層業務模組；解析/驗證/套用由 infra_py 工具負責。
 
 nats:
   servers:
@@ -35,89 +18,79 @@ nats:
 subjects:
   namespace: "inter"
 
-  # Publisher / Subscriber 模板（部門↔部門）
-  to_department_tpl:     "inter.dpt.{dept}.comm.in"            # 發佈：對單一部門直送（每部門的收件箱）
-  to_department_deliver: "inter.dpt.{dept}.comm.in.deliver"    # 訂閱：該部門的 deliver（顯式 ACK）
+  # Publisher / Subscriber 模板（部門↔部門；system control-plane）
+  to_department_tpl:     "inter.dpt.{dept}.sys.in"
+  to_department_deliver: "inter.dpt.{dept}.sys.in.deliver"
 
-  # 固定部門清單（deliver_subject 需逐一建立 consumer）
+  # 固定部門清單（system control-plane 參與者）
   departments:
-    - initialization
     - data
-    - risk
-    - strategy
     - state
+    - strategy
+    - risk
+    - execution
 
 jetstream:
   streams:
-    # 直送流：存所有部門的 comm.in（確保直送也走 JS + ACK）
-    - name: "INTER_TO_DEPT_STREAM"
+    - name: "INTER_SYS_STREAM"
       subjects:
-        - "inter.dpt.*.comm.in"
+        - "inter.dpt.*.sys.in"
       storage: file
       retention: limits
       discard: old
-      # 去重視窗（對應 Nats-Msg-Id）
-      duplicates: 2m
-      # 建議：保留期（集中於 Stream 控制；Consumer 只做投遞）
+      duplicates: 6m
       max_age: 30d
 
+      # deny_delete: true
+      # deny_purge: true
+
   consumers:
-    # 每個部門一條 deliver consumer（固定拓樸；deliver_subject 不支援萬用字元）
-
-    # initialization_dpt
-    - stream: "INTER_TO_DEPT_STREAM"
-      name: "DIRECT_to_initialization"
-      durable_name: "DIRECT_durable_initialization"
-      filter_subject: "inter.dpt.initialization.comm.in"
-      deliver_subject: "inter.dpt.initialization.comm.in.deliver"
-      ack_policy: explicit
-      ack_wait: 30s
-      max_deliver: 5
-      backoff: [1s, 3s, 10s, 30s]
-
     # data_dpt
-    - stream: "INTER_TO_DEPT_STREAM"
-      name: "DIRECT_to_data"
-      durable_name: "DIRECT_durable_data"
-      filter_subject: "inter.dpt.data.comm.in"
-      deliver_subject: "inter.dpt.data.comm.in.deliver"
+    - stream: "INTER_SYS_STREAM"
+      name: "SYS_to_data"
+      durable_name: "SYS_durable_data"
+      filter_subject: "inter.dpt.data.sys.in"
+      deliver_subject: "inter.dpt.data.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
-      max_deliver: 5
-      backoff: [1s, 3s, 10s, 30s]
-
-    # risk_dpt
-    - stream: "INTER_TO_DEPT_STREAM"
-      name: "DIRECT_to_risk"
-      durable_name: "DIRECT_durable_risk"
-      filter_subject: "inter.dpt.risk.comm.in"
-      deliver_subject: "inter.dpt.risk.comm.in.deliver"
-      ack_policy: explicit
-      ack_wait: 30s
-      max_deliver: 5
-      backoff: [1s, 3s, 10s, 30s]
-
-    # strategy_dpt
-    - stream: "INTER_TO_DEPT_STREAM"
-      name: "DIRECT_to_strategy"
-      durable_name: "DIRECT_durable_strategy"
-      filter_subject: "inter.dpt.strategy.comm.in"
-      deliver_subject: "inter.dpt.strategy.comm.in.deliver"
-      ack_policy: explicit
-      ack_wait: 30s
-      max_deliver: 5
+      max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
     # state_dpt
-    - stream: "INTER_TO_DEPT_STREAM"
-      name: "DIRECT_to_state"
-      durable_name: "DIRECT_durable_state"
-      filter_subject: "inter.dpt.state.comm.in"
-      deliver_subject: "inter.dpt.state.comm.in.deliver"
+    - stream: "INTER_SYS_STREAM"
+      name: "SYS_to_state"
+      durable_name: "SYS_durable_state"
+      filter_subject: "inter.dpt.state.sys.in"
+      deliver_subject: "inter.dpt.state.sys.in.deliver"
       ack_policy: explicit
-      ack_wait: 30s
-      max_deliver: 5
+      max_deliver: 7
       backoff: [1s, 3s, 10s, 30s]
 
-# 備註：
-# - inter 僅處理「部門收件匯流排」：每個部門一個 inbox（comm.in），消費端只訂自己的 deliver。
+    # strategy_dpt
+    - stream: "INTER_SYS_STREAM"
+      name: "SYS_to_strategy"
+      durable_name: "SYS_durable_strategy"
+      filter_subject: "inter.dpt.strategy.sys.in"
+      deliver_subject: "inter.dpt.strategy.sys.in.deliver"
+      ack_policy: explicit
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]
+
+    # risk_dpt
+    - stream: "INTER_SYS_STREAM"
+      name: "SYS_to_risk"
+      durable_name: "SYS_durable_risk"
+      filter_subject: "inter.dpt.risk.sys.in"
+      deliver_subject: "inter.dpt.risk.sys.in.deliver"
+      ack_policy: explicit
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]
+
+    # execution_dpt
+    - stream: "INTER_SYS_STREAM"
+      name: "SYS_to_execution"
+      durable_name: "SYS_durable_execution"
+      filter_subject: "inter.dpt.execution.sys.in"
+      deliver_subject: "inter.dpt.execution.sys.in.deliver"
+      ack_policy: explicit
+      max_deliver: 7
+      backoff: [1s, 3s, 10s, 30s]

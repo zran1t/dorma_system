@@ -1,0 +1,30 @@
+version: 1
+
+redis:
+  instance: kline
+  db: 0
+
+root_prefix: "kline:pool:"
+
+branches:
+
+  candles:
+    prefix: "kline:pool:candles:"
+    key_schema: "<symbol_c>:<interval>"
+
+    example_key: "kline:pool:candles:BTC-USDT-SWAP:1m"
+
+    value:
+      type: string
+      encoding: json
+      # contract:
+      # {
+      #   open,
+      #   high,
+      #   low,
+      #   close,
+      #   volume,
+      #   start_ts,
+      #   end_ts,
+      #   updated_at
+      # }
